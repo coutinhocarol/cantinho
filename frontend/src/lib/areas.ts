@@ -28,7 +28,7 @@ export function periodText(p: Period | null | undefined): string {
   return ''
 }
 
-export function occurrences(p: Period, now: number): number[] {
+function occurrences(p: Period, now: number): number[] {
   const out: number[] = []
   if (p.type === 'weekly') {
     for (let i = -8; i <= 8; i++) {
@@ -76,5 +76,3 @@ export const sortedAreas = (s: AppState): Area[] =>
 export const areaById = (s: AppState, id: string | undefined) => s.areas.find((a) => a.id === id)
 export const acceptsTasks = (a: Area) => a.acceptsTasks !== false
 export const taskAreas = (s: AppState) => sortedAreas(s).filter(acceptsTasks)
-export const tone = (s: AppState, a: Area): 'green' | 'rose' =>
-  sortedAreas(s).findIndex((x) => x.id === a.id) % 2 ? 'green' : 'rose'

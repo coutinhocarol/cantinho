@@ -5,7 +5,7 @@
 import { sign, verify } from 'hono/jwt'
 
 // O runtime dos Workers aceita no máximo 100.000 iterações no PBKDF2.
-export const PBKDF2_ITERATIONS = 100_000
+const PBKDF2_ITERATIONS = 100_000
 const KEY_BYTES = 32
 
 const b64 = (buf: ArrayBuffer | Uint8Array) => {

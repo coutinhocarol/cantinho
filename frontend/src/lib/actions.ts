@@ -4,7 +4,7 @@ import { waterCount, waterGoal } from './state'
 import type { Area, AppState, CalEvent, ListId, ListItem, Task } from './types'
 import { DAY, fmtDayMonth, fmtWhen, parseYmd, uid, ymd } from './time'
 
-export type ToastFn = (msg: string, undo?: () => void) => void
+type ToastFn = (msg: string, undo?: () => void) => void
 
 export interface Actions {
   markDone(id: string): void

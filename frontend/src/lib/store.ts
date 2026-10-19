@@ -33,7 +33,7 @@ const safeSet = (k: string, v: string) => {
   }
 }
 
-export interface StoreOptions {
+interface StoreOptions {
   api: StateApi
   onSyncFail?: (msg: string) => void
   /** Separa os dados locais de cada usuário (ex.: o id da conta). */

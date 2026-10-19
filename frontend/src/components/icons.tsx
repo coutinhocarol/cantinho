@@ -51,7 +51,7 @@ export const Glass = ({ on }: { on: boolean }) => (
 )
 
 /** Florzinha da marca (usa o <symbol id="flower"> do index.html). */
-export const FlowerUse = () => (
+const FlowerUse = () => (
   <svg viewBox="0 0 24 24">
     <use href="#flower" />
   </svg>

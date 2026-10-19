@@ -2,7 +2,7 @@ import type { AppState, ListId, Period } from './types'
 import { pruneEvents, eventById } from './events'
 import { clamp, ymd } from './time'
 
-export const LIST_IDS: ListId[] = ['compras', 'indicacoes', 'hobbies']
+const LIST_IDS: ListId[] = ['compras', 'indicacoes', 'hobbies']
 
 export const emptyState = (): AppState => ({
   v: 1,

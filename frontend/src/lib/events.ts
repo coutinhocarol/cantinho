@@ -28,7 +28,7 @@ export function occursOn(e: CalEvent, key: string): boolean {
   return false
 }
 
-export const evSort = (a: CalEvent, b: CalEvent) =>
+const evSort = (a: CalEvent, b: CalEvent) =>
   (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) ||
   (a.start || '').localeCompare(b.start || '') ||
   String(a.title).localeCompare(String(b.title))

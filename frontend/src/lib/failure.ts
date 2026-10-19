@@ -2,7 +2,7 @@
  * Traduz falhas do servidor em mensagens claras. O site roda no plano gratuito da Cloudflare
  * (Workers) e do Supabase, então "acabou a cota" e "banco pausado" são situações reais.
  */
-export type FailureKind = 'limit' | 'db' | 'server' | 'network' | 'users_limit'
+type FailureKind = 'limit' | 'db' | 'server' | 'network' | 'users_limit'
 
 export const MESSAGES: Record<FailureKind, string> = {
   limit:

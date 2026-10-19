@@ -23,7 +23,7 @@ export interface Env {
   DB_SCHEMA?: string
 }
 
-export interface Deps {
+interface Deps {
   /** Abre a conexão com o banco para esta requisição. */
   connect(env: Env): Sql
   /** Fecha a conexão ao fim da requisição (omitir quando a conexão é compartilhada). */

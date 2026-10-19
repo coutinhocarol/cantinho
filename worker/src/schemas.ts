@@ -90,7 +90,7 @@ export const AppStateSchema = z.object({
 
 export type AppStateInput = z.infer<typeof AppStateSchema>
 export type AreaInput = z.infer<typeof Area>
-export type TaskInput = z.infer<typeof Task>
+type TaskInput = z.infer<typeof Task>
 export type EventInput = z.infer<typeof CalEvent>
 
 export const Credentials = z.object({

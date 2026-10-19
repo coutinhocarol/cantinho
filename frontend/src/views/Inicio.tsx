@@ -77,7 +77,7 @@ function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
   )
 }
 
-export function TaskRow({ t }: { t: Task }) {
+function TaskRow({ t }: { t: Task }) {
   const c = useApp()
   return (
     <div className={`task ${t.done ? 'done' : ''}`}>

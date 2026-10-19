@@ -1,4 +1,4 @@
-export const HOUR = 36e5
+const HOUR = 36e5
 export const DAY = 864e5
 export const WD = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
 export const WD_FULL = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado']
@@ -14,7 +14,7 @@ export const firstChar = (v: string | null | undefined): string => {
   return seg ? [...seg.segment(v)][0].segment : Array.from(v)[0]
 }
 
-export const pad = (n: number) => String(n).padStart(2, '0')
+const pad = (n: number) => String(n).padStart(2, '0')
 export const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 export const parseYmd = (k: string) => {
   const [y, m, d] = k.split('-').map(Number)

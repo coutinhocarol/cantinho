@@ -8,7 +8,7 @@ import { fmtDayMonth, parseYmd } from '../lib/time'
 type Ctx = Pick<AppCtx, 'state' | 'openDialog'>
 
 /** Etiqueta do quadrante, ou o botão "Sem classificação". */
-export function quadTag(c: Ctx, t: Task): ReactNode {
+function quadTag(c: Ctx, t: Task): ReactNode {
   const q = quadById(t.quad)
   return q ? (
     <span className={`chip qtag q-${q.id}`}>{q.title}</span>

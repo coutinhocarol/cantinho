@@ -3,12 +3,12 @@ export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type ListId = 'compras' | 'indicacoes' | 'hobbies'
 export type KindId = 'filme' | 'serie' | 'livro' | 'outro'
 
-export interface IntervalPeriod {
+interface IntervalPeriod {
   type: 'interval'
   every: number
   unit: string
 }
-export interface WeeklyPeriod {
+interface WeeklyPeriod {
   type: 'weekly'
   days: number[]
   time: string
@@ -65,7 +65,7 @@ export interface ListItem {
   note?: string
 }
 
-export interface Water {
+interface Water {
   goal: number
   date: string
   count: number
