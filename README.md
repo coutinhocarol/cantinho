@@ -4,6 +4,8 @@ Organizador de rotina: **Bora** (o que fazer hoje), **Tarefas** (por área e mat
 **Calendário**, **Coisinhas** (listas) e **Áreas** (rotinas com periodicidade).
 Visual e regras são os do protótipo `Cantinho.html`, agora como projeto completo.
 
+**Site no ar:** https://cantinho.coutinhoucarol.workers.dev (o cadastro está fechado; este é um app pessoal).
+
 | Camada | Tecnologia |
 | --- | --- |
 | Front-end | React 19 + Vite + TypeScript, Tailwind CSS 4 |
