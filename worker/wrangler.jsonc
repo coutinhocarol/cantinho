@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "cantinho",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  // O site (frontend/dist) e a API saem do mesmo endereço. Só /api/* passa pelo código do Worker.
+  "assets": {
+    "directory": "../frontend/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": { "COOKIE_SECURE": "true", "ALLOW_REGISTRATION": "false" },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "b2c7bbcd8b234833b5d8b654bd0f482b"
+    }
+  ],
+  "observability": { "enabled": true }
+}

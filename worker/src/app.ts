@@ -1,0 +1,171 @@
+import { Hono } from 'hono'
+import type { Context } from 'hono'
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import type { Sql } from 'postgres'
+import type { ZodType } from 'zod'
+import { loadState, replaceState, StateError } from './repository'
+import { AppStateSchema, Credentials, Registration } from './schemas'
+import { COOKIE_NAME, createToken, hashPassword, readToken, verifyPassword } from './security'
+
+export interface Env {
+  /** Pool de conexões da Cloudflare para o Postgres do Supabase. */
+  HYPERDRIVE: { connectionString: string }
+  /** Chave que assina a sessão (cookie). Trocar a chave desloga todo mundo. */
+  JWT_SECRET: string
+  SESSION_DAYS?: string
+  /** "true" em produção (HTTPS); em http://localhost o cookie Secure não funciona. */
+  COOKIE_SECURE?: string
+  /** "false" fecha a criação de contas novas. */
+  ALLOW_REGISTRATION?: string
+  /** Só para testes: roda tudo num schema temporário em vez do `public`. */
+  DB_SCHEMA?: string
+}
+
+export interface Deps {
+  /** Abre a conexão com o banco para esta requisição. */
+  connect(env: Env): Sql
+  /** Fecha a conexão ao fim da requisição (omitir quando a conexão é compartilhada). */
+  release?(sql: Sql, c: Context): void
+}
+
+type Vars = { sql: Sql; user: { id: string; email: string } }
+type Ctx = Context<{ Bindings: Env; Variables: Vars }>
+
+const SCHEMA_RE = /^[a-z_][a-z0-9_]*$/
+
+export function createApp(deps: Deps) {
+  const app = new Hono<{ Bindings: Env; Variables: Vars }>()
+
+  app.use('/api/*', async (c, next) => {
+    const sql = deps.connect(c.env)
+    c.set('sql', sql)
+    try {
+      await next()
+    } finally {
+      deps.release?.(sql, c)
+    }
+  })
+
+  /** Executa `fn` numa transação (no schema de testes, se houver). */
+  const tx = <T>(c: Ctx, fn: (t: Sql) => Promise<T>): Promise<T> =>
+    c.var.sql.begin(async (t) => {
+      const schema = c.env.DB_SCHEMA
+      if (schema) {
+        if (!SCHEMA_RE.test(schema)) throw new Error('DB_SCHEMA inválido')
+        await t.unsafe(`set local search_path to "${schema}"`)
+      }
+      return fn(t as unknown as Sql)
+    }) as Promise<T>
+
+  const json = (c: Ctx, status: number, detail: string) => c.json({ detail }, status as 400)
+
+  async function parseBody<T>(c: Ctx, schema: ZodType<T>): Promise<{ ok: true; data: T } | { ok: false }> {
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      body = undefined
+    }
+    const r = schema.safeParse(body)
+    return r.success ? { ok: true, data: r.data } : { ok: false }
+  }
+
+  const startSession = async (c: Ctx, user: { id: string; email: string }) => {
+    const days = Number(c.env.SESSION_DAYS ?? 30)
+    setCookie(c, COOKIE_NAME, await createToken(user.id, c.env.JWT_SECRET, days), {
+      httpOnly: true,
+      sameSite: 'Lax',
+      secure: c.env.COOKIE_SECURE === 'true',
+      path: '/',
+      maxAge: days * 86400,
+    })
+    return { id: user.id, email: user.email }
+  }
+
+  const requireUser = async (c: Ctx, next: () => Promise<void>) => {
+    const token = getCookie(c, COOKIE_NAME)
+    const id = token ? await readToken(token, c.env.JWT_SECRET) : null
+    const rows = id
+      ? await tx(c, (t) => t<{ id: string; email: string }[]>`select id, email from users where id::text = ${id}`).catch(
+          () => [],
+        )
+      : []
+    if (!rows[0]) return json(c, 401, 'Não autenticado')
+    c.set('user', rows[0])
+    await next()
+  }
+
+  // ---------- saúde ----------
+  app.get('/api/health', (c) => c.json({ status: 'ok' }))
+  app.get('/api/health/db', async (c) => {
+    await tx(c, (t) => t`select 1`)
+    return c.json({ status: 'ok' })
+  })
+
+  // ---------- login ----------
+  app.post('/api/auth/register', async (c) => {
+    if (c.env.ALLOW_REGISTRATION === 'false') return json(c, 403, 'Criação de contas desativada')
+    const body = await parseBody(c, Registration)
+    if (!body.ok) return json(c, 422, 'Dados inválidos')
+    const email = body.data.email.toLowerCase()
+    const hash = await hashPassword(body.data.password)
+    try {
+      const [user] = await tx(
+        c,
+        (t) => t<{ id: string; email: string }[]>`
+          insert into users (id, email, password_hash) values (gen_random_uuid(), ${email}, ${hash})
+          returning id, email`,
+      )
+      return c.json(await startSession(c, user), 201)
+    } catch (e) {
+      if ((e as { code?: string }).code === '23505') return json(c, 409, 'Já existe uma conta com esse e-mail')
+      throw e
+    }
+  })
+
+  app.post('/api/auth/login', async (c) => {
+    const body = await parseBody(c, Credentials)
+    if (!body.ok) return json(c, 422, 'Dados inválidos')
+    const [user] = await tx(
+      c,
+      (t) => t<{ id: string; email: string; password_hash: string }[]>`
+        select id, email, password_hash from users where email = ${body.data.email.toLowerCase()}`,
+    )
+    // com e-mail inexistente a verificação roda do mesmo jeito (mesmo tempo de resposta)
+    if (!(await verifyPassword(user?.password_hash ?? null, body.data.password)) || !user)
+      return json(c, 401, 'E-mail ou senha incorretos')
+    return c.json(await startSession(c, user))
+  })
+
+  app.post('/api/auth/logout', (c) => {
+    deleteCookie(c, COOKIE_NAME, { path: '/' })
+    return c.body(null, 204)
+  })
+
+  app.get('/api/auth/me', requireUser, (c) => c.json(c.var.user))
+
+  // ---------- dados do app ----------
+  app.get('/api/state', requireUser, async (c) => {
+    const data = await tx(c, (t) => loadState(t, c.var.user.id))
+    return data ? c.json(data) : c.body(null, 204)
+  })
+
+  app.put('/api/state', requireUser, async (c) => {
+    const body = await parseBody(c, AppStateSchema)
+    if (!body.ok) return json(c, 422, 'Estado inválido')
+    try {
+      await tx(c, (t) => replaceState(t, c.var.user.id, body.data))
+    } catch (e) {
+      if (e instanceof StateError) return json(c, 422, e.message)
+      throw e
+    }
+    return c.json({ updatedAt: new Date().toISOString() })
+  })
+
+  app.notFound((c) => c.json({ detail: 'Não encontrado' }, 404))
+  app.onError((e, c) => {
+    console.error(e)
+    return c.json({ detail: 'Erro interno' }, 500)
+  })
+  return app
+}

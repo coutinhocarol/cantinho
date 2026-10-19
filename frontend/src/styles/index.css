@@ -1,0 +1,26 @@
+@layer theme, base, components, utilities;
+
+/* Tailwind sem o preflight: o visual base vem do CSS original do Cantinho. */
+@import "tailwindcss/theme.css" layer(theme) prefix(tw);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "./cantinho.css" layer(components);
+
+@theme {
+  --color-rose: var(--rose);
+  --color-rose-ink: var(--rose-ink);
+  --color-rose-tint: var(--rose-tint);
+  --color-green: var(--green);
+  --color-green-ink: var(--green-ink);
+  --color-green-tint: var(--green-tint);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-surface: var(--surface);
+  --font-display: "Bricolage Grotesque", "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --breakpoint-phone: 480px;
+  --breakpoint-tab: 760px;
+  --breakpoint-lap: 960px;
+  --breakpoint-wide: 1100px;
+}

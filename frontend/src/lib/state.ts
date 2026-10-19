@@ -1,0 +1,104 @@
+import type { AppState, ListId, Period } from './types'
+import { pruneEvents, eventById } from './events'
+import { clamp, ymd } from './time'
+
+export const LIST_IDS: ListId[] = ['compras', 'indicacoes', 'hobbies']
+
+export const emptyState = (): AppState => ({
+  v: 1,
+  areas: [],
+  tasks: [],
+  events: [],
+  water: { goal: 10, date: '', count: 0, v2: true },
+  lists: { compras: [], indicacoes: [], hobbies: [] },
+})
+
+export const waterGoal = (s: AppState) => Math.max(1, (s.water && s.water.goal) || 10)
+export const waterCount = (s: AppState, now = new Date()) =>
+  s.water && s.water.date === ymd(now) ? Math.min(s.water.count || 0, waterGoal(s)) : 0
+export const clampGoal = (n: number) => clamp(n, 1, 30)
+
+/**
+ * Corrige dados antigos/inconsistentes e faz a "virada do dia".
+ * Muta o estado recebido e devolve `true` se algo mudou.
+ */
+export function normalize(s: AppState, now = new Date()): boolean {
+  let ch = false
+  if (!Array.isArray(s.events)) s.events = []
+  if (!s.lists || typeof s.lists !== 'object') s.lists = {} as AppState['lists']
+  LIST_IDS.forEach((k) => {
+    if (!Array.isArray(s.lists[k])) s.lists[k] = []
+  })
+  if (!s.water || typeof s.water !== 'object') s.water = { goal: 10, date: '', count: 0, v2: true }
+  if (!s.water.v2) {
+    s.water.goal = 10
+    s.water.v2 = true
+    ch = true
+  }
+  {
+    const tk = ymd(now)
+    if (s.water.date !== tk) {
+      s.water.date = tk
+      s.water.count = 0
+      ch = true
+    }
+  }
+  const before = s.events.length
+  s.events = s.events.filter(
+    (e) => !((!e.repeat || e.repeat === 'none') && (e.doneDates || []).includes(e.date)),
+  )
+  if (s.events.length !== before) ch = true
+  if (pruneEvents(s, now)) ch = true
+  ;(s.tasks || []).forEach((t) => {
+    if (t.eventId && !eventById(s, t.eventId)) {
+      delete t.eventId
+      ch = true
+    }
+  })
+  s.areas.forEach((a) => {
+    // dados antigos podem ter períodos que já não existem
+    const p = (a.period || {}) as unknown as Record<string, unknown>
+    if (p.type === 'monthly') {
+      a.period = { type: 'interval', every: 30, unit: 'days' }
+      ch = true
+    } else if (p.type === 'interval' && p.unit !== 'days') {
+      const every = Number(p.every)
+      const d = p.unit === 'weeks' ? 7 * every : Math.ceil(every / 24)
+      a.period = { type: 'interval', every: Math.max(1, d), unit: 'days' } as Period
+      ch = true
+    }
+  })
+  return ch
+}
+
+export const hasData = (st: AppState | null | undefined): boolean =>
+  !!st &&
+  !!(
+    (st.areas || []).length ||
+    (st.tasks || []).length ||
+    (st.events || []).length ||
+    Object.values(st.lists || {}).some((a) => (a || []).length)
+  )
+
+/** Junta o que existia só neste aparelho com o que já está na conta. */
+export function mergeLocalInto(remote: AppState, local: AppState): AppState {
+  const out: AppState = JSON.parse(JSON.stringify(remote))
+  const ids = (a: { id: string }[] | undefined) => new Set((a || []).map((x) => x.id))
+  for (const k of ['areas', 'tasks', 'events'] as const) {
+    const arr = (out[k] ?? []) as { id: string }[]
+    Object.assign(out, { [k]: arr })
+    const have = ids(arr)
+    ;((local[k] || []) as { id: string }[]).forEach((x) => {
+      if (!have.has(x.id)) arr.push(x)
+    })
+  }
+  out.lists = out.lists || ({} as AppState['lists'])
+  LIST_IDS.forEach((k) => {
+    out.lists[k] = out.lists[k] || []
+    const have = ids(out.lists[k])
+    ;((local.lists || {})[k] || []).forEach((x) => {
+      if (!have.has(x.id)) out.lists[k].push(x)
+    })
+  })
+  return out
+}
