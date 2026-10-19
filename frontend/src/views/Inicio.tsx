@@ -146,27 +146,25 @@ export function Inicio() {
   const goal = waterGoal(state)
   const count = waterCount(state)
 
-  let tasksNode: ReactNode = null
-  if (state.areas.length || allTasks.length) {
-    if (!pend.length) tasksNode = <p className="sub">Nenhuma tarefa pendente.</p>
-    else {
-      const aPos = Object.fromEntries(sortedAreas(state).map((a, i) => [a.id, i]))
-      const qRank = (q: Task['quad']) => (q === 'fazer' ? 0 : 1)
-      const ordered = [...pend].sort(
-        (x, y) =>
-          (x.due || '9').localeCompare(y.due || '9') ||
-          qRank(x.quad) - qRank(y.quad) ||
-          (aPos[x.areaId] ?? 1e9) - (aPos[y.areaId] ?? 1e9) ||
-          (x.createdAt || 0) - (y.createdAt || 0),
-      )
-      tasksNode = (
-        <div>
-          {ordered.map((t) => (
-            <TaskRow key={t.id} t={t} />
-          ))}
-        </div>
-      )
-    }
+  let tasksNode: ReactNode
+  if (!pend.length) tasksNode = <p className="sub">Nenhuma tarefa pendente.</p>
+  else {
+    const aPos = Object.fromEntries(sortedAreas(state).map((a, i) => [a.id, i]))
+    const qRank = (q: Task['quad']) => (q === 'fazer' ? 0 : 1)
+    const ordered = [...pend].sort(
+      (x, y) =>
+        (x.due || '9').localeCompare(y.due || '9') ||
+        qRank(x.quad) - qRank(y.quad) ||
+        (aPos[x.areaId] ?? 1e9) - (aPos[y.areaId] ?? 1e9) ||
+        (x.createdAt || 0) - (y.createdAt || 0),
+    )
+    tasksNode = (
+      <div>
+        {ordered.map((t) => (
+          <TaskRow key={t.id} t={t} />
+        ))}
+      </div>
+    )
   }
 
   const allClear =
@@ -182,8 +180,9 @@ export function Inicio() {
       <Flower />
       <strong>Nenhuma área ainda</strong>
       <p>
-        Áreas são partes da sua rotina com um ritmo, como o quarto a cada 7 dias ou as plantas toda
-        terça às 21h.
+        Áreas são partes da sua rotina que pedem atenção de tempos em tempos, como a limpeza da casa
+        a cada 3 dias, a organização financeira a cada 30 dias ou o estudo para uma matéria da
+        faculdade toda sexta às 7h.
       </p>
       <button className="btn primary" onClick={actions.addExamples}>
         Usar exemplos
