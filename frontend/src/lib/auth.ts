@@ -1,3 +1,5 @@
+import { failureFromResponse, networkFailure } from './failure'
+
 export interface User {
   id: string
   email: string
@@ -19,7 +21,9 @@ export interface AuthApi {
   logout(): Promise<void>
 }
 
-async function readError(res: Response): Promise<AuthError> {
+async function readError(res: Response): Promise<Error> {
+  const failure = await failureFromResponse(res)
+  if (failure) return failure // limite de uso, banco fora do ar, erro do servidor
   let msg = ''
   try {
     const body = await res.json()
@@ -32,15 +36,22 @@ async function readError(res: Response): Promise<AuthError> {
 }
 
 export function createHttpAuth(base = '/api'): AuthApi {
+  const send = async (url: string, init?: RequestInit) => {
+    try {
+      return await fetch(url, init)
+    } catch {
+      throw networkFailure()
+    }
+  }
   const post = (path: string, body?: unknown) =>
-    fetch(`${base}${path}`, {
+    send(`${base}${path}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   return {
     async me() {
-      const res = await fetch(`${base}/auth/me`, { headers: { Accept: 'application/json' } })
+      const res = await send(`${base}/auth/me`, { headers: { Accept: 'application/json' } })
       if (res.status === 401) return null
       if (!res.ok) throw await readError(res)
       return (await res.json()) as User

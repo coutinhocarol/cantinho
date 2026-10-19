@@ -17,6 +17,8 @@ export interface Env {
   COOKIE_SECURE?: string
   /** "false" fecha a criação de contas novas. */
   ALLOW_REGISTRATION?: string
+  /** Teto de contas (protege o armazenamento gratuito do banco). Padrão: 1000. */
+  MAX_USERS?: string
   /** Só para testes: roda tudo num schema temporário em vez do `public`. */
   DB_SCHEMA?: string
 }
@@ -32,6 +34,15 @@ type Vars = { sql: Sql; user: { id: string; email: string } }
 type Ctx = Context<{ Bindings: Env; Variables: Vars }>
 
 const SCHEMA_RE = /^[a-z_][a-z0-9_]*$/
+
+/** Erros de conexão com o Postgres (banco pausado/fora do ar, limite de conexões, rede). */
+export function isDbUnavailable(e: unknown): boolean {
+  const code = String((e as { code?: unknown })?.code ?? '')
+  return (
+    /^(CONNECT_TIMEOUT|CONNECTION_|ECONN|ENOTFOUND|ETIMEDOUT|EAI_AGAIN)/.test(code) ||
+    /^(08|53|57P0|28)/.test(code) // conexão, falta de recursos/conexões, desligamento, autenticação
+  )
+}
 
 export function createApp(deps: Deps) {
   const app = new Hono<{ Bindings: Env; Variables: Vars }>()
@@ -57,7 +68,8 @@ export function createApp(deps: Deps) {
       return fn(t as unknown as Sql)
     }) as Promise<T>
 
-  const json = (c: Ctx, status: number, detail: string) => c.json({ detail }, status as 400)
+  const json = (c: Ctx, status: number, detail: string, code?: string) =>
+    c.json({ detail, ...(code ? { code } : {}) }, status as 400)
 
   async function parseBody<T>(c: Ctx, schema: ZodType<T>): Promise<{ ok: true; data: T } | { ok: false }> {
     let body: unknown
@@ -85,10 +97,9 @@ export function createApp(deps: Deps) {
   const requireUser = async (c: Ctx, next: () => Promise<void>) => {
     const token = getCookie(c, COOKIE_NAME)
     const id = token ? await readToken(token, c.env.JWT_SECRET) : null
+    // se o banco falhar aqui o erro sobe (503), em vez de parecer "sessão expirada"
     const rows = id
-      ? await tx(c, (t) => t<{ id: string; email: string }[]>`select id, email from users where id::text = ${id}`).catch(
-          () => [],
-        )
+      ? await tx(c, (t) => t<{ id: string; email: string }[]>`select id, email from users where id::text = ${id}`)
       : []
     if (!rows[0]) return json(c, 401, 'Não autenticado')
     c.set('user', rows[0])
@@ -107,6 +118,10 @@ export function createApp(deps: Deps) {
     if (c.env.ALLOW_REGISTRATION === 'false') return json(c, 403, 'Criação de contas desativada')
     const body = await parseBody(c, Registration)
     if (!body.ok) return json(c, 422, 'Dados inválidos')
+    const max = Number(c.env.MAX_USERS ?? 1000)
+    const [{ n }] = await tx(c, (t) => t<{ n: number }[]>`select count(*)::int as n from users`)
+    if (n >= max)
+      return json(c, 403, 'O limite de contas deste site foi atingido. Tente novamente mais tarde.', 'users_limit')
     const email = body.data.email.toLowerCase()
     const hash = await hashPassword(body.data.password)
     try {
@@ -165,7 +180,17 @@ export function createApp(deps: Deps) {
   app.notFound((c) => c.json({ detail: 'Não encontrado' }, 404))
   app.onError((e, c) => {
     console.error(e)
-    return c.json({ detail: 'Erro interno' }, 500)
+    if (isDbUnavailable(e))
+      return c.json(
+        {
+          code: 'db_unavailable',
+          detail:
+            'O banco de dados está indisponível no momento. No plano gratuito do Supabase ele pode estar pausado por inatividade ou no limite de conexões. Tente de novo em instantes.',
+        },
+        503,
+        { 'Retry-After': '30' },
+      )
+    return c.json({ code: 'internal', detail: 'Erro interno no servidor. Tente de novo em instantes.' }, 500)
   })
   return app
 }

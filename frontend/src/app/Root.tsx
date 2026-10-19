@@ -5,7 +5,7 @@ import { Store } from '../lib/store'
 import App from './App'
 import { LoginScreen } from './LoginScreen'
 
-type Session = { status: 'loading' } | { status: 'out' } | { status: 'in'; user: User }
+type Session = { status: 'loading' } | { status: 'out'; notice?: string } | { status: 'in'; user: User }
 
 /** Decide entre a tela de login e o app, e cria o store de quem está logado. */
 export default function Root({ auth }: { auth: AuthApi }) {
@@ -16,7 +16,7 @@ export default function Root({ auth }: { auth: AuthApi }) {
     auth
       .me()
       .then((user) => alive && setSession(user ? { status: 'in', user } : { status: 'out' }))
-      .catch(() => alive && setSession({ status: 'out' }))
+      .catch((e: unknown) => alive && setSession({ status: 'out', notice: e instanceof Error ? e.message : undefined }))
     return () => {
       alive = false
     }
@@ -26,7 +26,7 @@ export default function Root({ auth }: { auth: AuthApi }) {
 
   if (session.status === 'loading') return null
   if (session.status === 'out')
-    return <LoginScreen auth={auth} onDone={(user) => setSession({ status: 'in', user })} />
+    return <LoginScreen auth={auth} notice={session.notice} onDone={(user) => setSession({ status: 'in', user })} />
   return <LoggedIn key={session.user.id} user={session.user} auth={auth} onExit={expired} />
 }
 

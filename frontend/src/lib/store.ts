@@ -1,6 +1,7 @@
 import type { StateApi } from './api'
 import type { AppState } from './types'
 import { HttpError } from './api'
+import { ServiceError } from './failure'
 import { emptyState, hasData, mergeLocalInto, normalize } from './state'
 
 export const LS_KEY = 'cantinho-em-ordem-v1'
@@ -61,6 +62,8 @@ export class Store {
   private connected = false
   private connecting = false
   private syncWarned = false
+  private syncError: string | null = null
+  private failures = 0
 
   constructor(opts: StoreOptions) {
     this.api = opts.api
@@ -138,10 +141,21 @@ export class Store {
   }
 
   // ---------- conta (servidor) ----------
-  private notifySyncFail() {
+  /** Problema de sincronização em andamento (mostrado como aviso fixo), ou `null`. */
+  getSyncError = () => this.syncError
+  private setSyncError(msg: string | null) {
+    if (msg === this.syncError) return
+    this.syncError = msg
+    this.emit()
+  }
+
+  private notifySyncFail(e: unknown) {
+    // mensagens específicas (limite do plano gratuito, banco fora do ar, sem internet) explicam o motivo
+    const msg = e instanceof ServiceError ? `${e.message} Seus dados ficam só neste aparelho por enquanto.` : SYNC_FAIL_MSG
+    this.setSyncError(msg)
     if (this.syncWarned) return
     this.syncWarned = true
-    this.onSyncFail(SYNC_FAIL_MSG)
+    this.onSyncFail(msg)
   }
 
   /** Busca o estado da conta e junta com o que há neste aparelho. */
@@ -152,9 +166,10 @@ export class Store {
       const remote = await this.api.load()
       this.connected = true
       this.applyRemote(remote, first)
+      this.setSyncError(null)
     } catch (e) {
       console.error('sync: não conectou', e)
-      if (!isUnauthorized(e)) this.notifySyncFail()
+      if (!isUnauthorized(e)) this.notifySyncFail(e)
     } finally {
       this.connecting = false
     }
@@ -166,8 +181,11 @@ export class Store {
     if (this.writeTimer) return
     try {
       this.applyRemote(await this.api.load(), false)
+      this.setSyncError(null)
     } catch (e) {
       console.error('sync: erro na leitura', e)
+      if (!isUnauthorized(e) && e instanceof ServiceError)
+        this.setSyncError(`${e.message} Seus dados ficam só neste aparelho por enquanto.`)
     }
   }
 
@@ -210,11 +228,17 @@ export class Store {
       await this.api.save(this.state)
       this.lastSent = body
       this.markSynced()
+      this.failures = 0
+      this.syncWarned = false
+      this.setSyncError(null)
     } catch (e) {
       console.error('sync: falha ao salvar', e)
       if (isUnauthorized(e)) return // sessão expirou: a tela de login assume
-      this.notifySyncFail()
-      if (!this.writeTimer) this.writeTimer = setTimeout(() => void this.flush(), this.retryMs())
+      this.notifySyncFail(e)
+      // tenta de novo com espera crescente (até ~1 min), para não martelar um servidor sem cota
+      const wait = this.retryMs() * Math.min(2 ** this.failures, 32)
+      this.failures++
+      if (!this.writeTimer) this.writeTimer = setTimeout(() => void this.flush(), wait)
     }
   }
 }

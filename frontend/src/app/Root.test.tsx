@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { AuthError } from '../lib/auth'
+import { ServiceError } from '../lib/failure'
 import type { AuthApi, User } from '../lib/auth'
 import { emptyState } from '../lib/state'
 import { LS_KEY } from '../lib/store'
@@ -177,5 +178,74 @@ describe('Login', () => {
     await user.type(screen.getByPlaceholderText('Ex.: Quarto'), 'Quarto{Enter}')
     expect(await screen.findByLabelText('E-mail', {}, { timeout: 3000 })).toBeInTheDocument()
     expect(screen.queryByText(/Não consegui salvar/)).not.toBeInTheDocument()
+  })
+})
+
+describe('Falhas do servidor', () => {
+  const limitAuth = (): AuthApi & { current: User | null } => {
+    const auth = fakeAuth()
+    auth.login = vi.fn(async () => {
+      throw new ServiceError('limit', 429)
+    })
+    return auth
+  }
+
+  it('limite de uso estourado no login mostra uma mensagem clara', async () => {
+    const user = userEvent.setup()
+    render(<Root auth={limitAuth()} />)
+    await user.type(await screen.findByLabelText('E-mail'), 'ana@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha-certa-1{Enter}')
+    expect(await screen.findByRole('alert')).toHaveTextContent(/limite de uso do plano gratuito da Cloudflare/)
+    expect(screen.getByRole('alert')).toHaveTextContent(/Tente de novo mais tarde/)
+  })
+
+  it('servidor fora do ar ao abrir: a tela de login já avisa o motivo', async () => {
+    const auth = fakeAuth()
+    auth.me = vi.fn(async () => {
+      throw new ServiceError('db', 503)
+    })
+    render(<Root auth={auth} />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/banco de dados está indisponível/)
+  })
+
+  it('limite de contas no cadastro', async () => {
+    const auth = fakeAuth()
+    auth.register = vi.fn(async () => {
+      throw new ServiceError('users_limit', 403)
+    })
+    const user = userEvent.setup()
+    render(<Root auth={auth} />)
+    await user.click(await screen.findByRole('button', { name: 'Criar conta' }))
+    await user.type(screen.getByLabelText('E-mail'), 'nova@example.com')
+    await user.type(screen.getByLabelText('Senha'), 'senha-comprida{Enter}')
+    expect(await screen.findByRole('alert')).toHaveTextContent(/limite de contas/)
+  })
+
+  it('a tela de login explica como começar (sem conta prévia)', async () => {
+    render(<Root auth={fakeAuth()} />)
+    expect(await screen.findByText(/Primeira vez por aqui\?/)).toBeInTheDocument()
+  })
+
+  it('quando a cota acaba durante o uso, aparece um aviso fixo e o app segue funcionando', async () => {
+    const auth = fakeAuth(ana)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, init?: RequestInit) =>
+        init?.method === 'PUT'
+          ? new Response('<html>1102</html>', { status: 503, headers: { 'Content-Type': 'text/html' } })
+          : new Response(null, { status: 204 }),
+      ),
+    )
+    const user = userEvent.setup()
+    render(<Root auth={auth} />)
+    await user.click(await screen.findByRole('tab', { name: 'Áreas' }))
+    await user.click(screen.getByRole('button', { name: /Nova área/ }))
+    await user.type(screen.getByPlaceholderText('Ex.: Quarto'), 'Quarto{Enter}')
+    // o aviso aparece no balão (5 s) e fica fixo no topo enquanto o problema durar
+    await screen.findAllByText(/limite de uso do plano gratuito da Cloudflare/, {}, { timeout: 4000 })
+    const note = document.querySelector('.past-note') as HTMLElement
+    expect(note).toHaveTextContent(/limite de uso do plano gratuito da Cloudflare/)
+    expect(note).toHaveTextContent(/Seus dados ficam só neste aparelho/)
+    expect(screen.getByText('Quarto')).toBeInTheDocument() // continua usável
   })
 })

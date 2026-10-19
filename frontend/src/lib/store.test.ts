@@ -86,7 +86,7 @@ describe('Store', () => {
     store.commit((d) => void d.areas.push(area('b')))
     await vi.advanceTimersByTimeAsync(499)
     expect(api.save).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(2)
+    await vi.advanceTimersByTimeAsync(200)
     expect(api.save).toHaveBeenCalledTimes(1)
     expect(api.remote!.areas.map((a) => a.id)).toEqual(['a', 'b'])
   })
@@ -169,9 +169,11 @@ describe('Store', () => {
     await vi.advanceTimersByTimeAsync(20)
     expect(onSyncFail).toHaveBeenCalledTimes(1)
     expect(store.getState().areas).toHaveLength(1)
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(1000) // 1ª nova tentativa (falha de novo)
     expect(onSyncFail).toHaveBeenCalledTimes(1)
-    await vi.advanceTimersByTimeAsync(1000)
+    await vi.advanceTimersByTimeAsync(1900) // a espera dobrou: ainda não tentou
+    expect(api.remote).toBeNull()
+    await vi.advanceTimersByTimeAsync(200)
     expect(api.remote!.areas.map((a) => a.id)).toEqual(['a'])
   })
 

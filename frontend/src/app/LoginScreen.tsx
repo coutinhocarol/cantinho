@@ -2,14 +2,24 @@ import { useState } from 'react'
 import { Flower } from '../components/icons'
 import type { AuthApi, User } from '../lib/auth'
 import { AuthError } from '../lib/auth'
+import { ServiceError } from '../lib/failure'
 
 type Mode = 'login' | 'register'
 
-export function LoginScreen({ auth, onDone }: { auth: AuthApi; onDone: (u: User) => void }) {
+export function LoginScreen({
+  auth,
+  onDone,
+  notice = '',
+}: {
+  auth: AuthApi
+  onDone: (u: User) => void
+  /** Aviso ao abrir a tela (ex.: servidor fora do ar ou limite de uso atingido). */
+  notice?: string
+}) {
   const [mode, setMode] = useState<Mode>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [err, setErr] = useState('')
+  const [err, setErr] = useState(notice)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
@@ -32,7 +42,9 @@ export function LoginScreen({ auth, onDone }: { auth: AuthApi; onDone: (u: User)
       onDone(user)
     } catch (e) {
       setErr(
-        e instanceof AuthError ? e.message : 'Não consegui falar com o servidor. Tente de novo.',
+        e instanceof AuthError || e instanceof ServiceError
+          ? e.message
+          : 'Não consegui falar com o servidor. Tente de novo.',
       )
       setBusy(false)
     }
@@ -51,6 +63,15 @@ export function LoginScreen({ auth, onDone }: { auth: AuthApi; onDone: (u: User)
         <p className="sub tw:mx-auto tw:mb-[20px]">
           {mode === 'login' ? 'Entre para ver as suas rotinas.' : 'Crie a sua conta para começar.'}
         </p>
+        {mode === 'login' ? (
+          <p className="preview tw:mb-[16px] tw:text-left">
+            Primeira vez por aqui? Escolha “Criar conta” (vale qualquer e-mail).
+          </p>
+        ) : (
+          <p className="preview tw:mb-[16px] tw:text-left">
+            Depois de entrar, toque em “Usar exemplos” para ver o app preenchido.
+          </p>
+        )}
         <div className="seg tw:mb-[16px]">
           <button type="button" aria-pressed={mode === 'login'} onClick={() => switchMode('login')}>
             Entrar

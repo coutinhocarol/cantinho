@@ -10,7 +10,7 @@
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
-  "vars": { "COOKIE_SECURE": "true", "ALLOW_REGISTRATION": "false" },
+  "vars": { "COOKIE_SECURE": "true", "ALLOW_REGISTRATION": "true", "MAX_USERS": "1000" },
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",

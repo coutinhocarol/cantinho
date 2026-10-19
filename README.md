@@ -4,7 +4,7 @@ Organizador de rotina: **Bora** (o que fazer hoje), **Tarefas** (por área e mat
 **Calendário**, **Coisinhas** (listas) e **Áreas** (rotinas com periodicidade).
 Visual e regras são os do protótipo `Cantinho.html`, agora como projeto completo.
 
-**Site no ar:** https://cantinho.coutinhoucarol.workers.dev (o cadastro está fechado; este é um app pessoal).
+**Site no ar:** https://cantinho.coutinhoucarol.workers.dev — é só clicar em **Criar conta** (vale qualquer e-mail, não há confirmação) e, dentro do app, em **Usar exemplos** para vê-lo preenchido.
 
 | Camada | Tecnologia |
 | --- | --- |
@@ -67,14 +67,34 @@ npx wrangler secret put JWT_SECRET
 npm run deploy
 ```
 
-O endereço final aparece no fim (`https://cantinho.<sua-conta>.workers.dev`). Depois de criar a sua
-conta, feche o cadastro: em `wrangler.jsonc`, `"vars": { "ALLOW_REGISTRATION": "false", ... }`, e
-publique de novo.
+O endereço final aparece no fim (`https://cantinho.<sua-conta>.workers.dev`). O cadastro fica aberto
+(`ALLOW_REGISTRATION`) até um teto de contas (`MAX_USERS`, padrão 1000), para não encher o banco
+gratuito. Para fechá-lo, ponha `"ALLOW_REGISTRATION": "false"` em `vars` no `wrangler.jsonc`.
 
-**Atenção ao limite de CPU.** O plano gratuito dos Workers dá ~10 ms de CPU por requisição e o hash
-da senha (PBKDF2, 100 mil iterações, ~20 ms) pode estourar no cadastro e no login. Se aparecer erro
-1102 ao entrar, use o plano Workers Paid (US$ 5/mês) ou me peça para trocar o login para o
-Supabase Auth, que faz o hash fora do Worker.
+**Publicação automática:** com o repositório conectado em Workers & Pages → Settings → Builds
+(build `npm --prefix frontend ci && npm --prefix frontend run build && npm --prefix worker ci`, deploy
+`npx wrangler deploy --config worker/wrangler.jsonc`), cada `git push` na `main` publica o site.
+
+## Limites dos planos gratuitos (e o que o usuário vê)
+
+O site roda nos planos gratuitos da Cloudflare e do Supabase. Quando um limite estoura, o app não
+fica em branco: mostra o motivo e continua funcionando com os dados salvos no aparelho.
+
+| Situação | O que acontece | Mensagem |
+| --- | --- | --- |
+| Cota diária de requisições (100 mil/dia) ou CPU do Worker excedidos (erros 1027/1102 da Cloudflare, HTTP 429/5xx em HTML) | O site (arquivos estáticos) continua abrindo; só a API falha | "O servidor atingiu o limite de uso do plano gratuito da Cloudflare… reinicia por volta das 21h (Brasília)" |
+| Banco do Supabase pausado por inatividade, sem conexões ou fora do ar | API responde `503` com `code: db_unavailable` | "O banco de dados está indisponível… pode estar pausado por inatividade" |
+| Teto de contas atingido | `403` com `code: users_limit` | "O limite de contas deste site foi atingido" |
+| Sem internet | — | "Sem conexão com o servidor" |
+
+No login o erro aparece sob o formulário; dentro do app, como um aviso fixo no topo (e um balão) que
+some sozinho quando a conexão volta. O app tenta salvar de novo com espera crescente (até ~1 min)
+para não martelar um servidor sem cota. Um banco pausado do Supabase volta pelo painel do Supabase
+(botão *Restore*).
+
+O hash da senha (PBKDF2, 100 mil iterações, ~20 ms) cabe na cota de CPU do plano gratuito nos
+testes feitos. Se um dia aparecer o erro 1102 ao entrar, as saídas são o plano Workers Paid
+(US$ 5/mês) ou trocar o login para o Supabase Auth.
 
 ## Como os dados são salvos
 

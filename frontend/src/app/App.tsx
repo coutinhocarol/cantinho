@@ -64,6 +64,7 @@ export default function App({
   onLogout?: () => void
 }) {
   const state = useSyncExternalStore(store.subscribe, store.getState)
+  const syncError = useSyncExternalStore(store.subscribe, store.getSyncError)
   const [tab, setTabState] = useState<TabId>('inicio')
   const [ui, setUiState] = useState<UiState>(initialUi)
   const [dialog, setDialog] = useState<DialogState>(null)
@@ -214,6 +215,11 @@ export default function App({
       </header>
 
       <main>
+        {syncError ? (
+          <p className="past-note tw:mb-[16px]" role="status">
+            {syncError}
+          </p>
+        ) : null}
         {TABS.map((t) => (
           <section className="view" id={`v-${t.id}`} key={t.id} hidden={tab !== t.id}>
             {tab === t.id ? views[t.id] : null}
