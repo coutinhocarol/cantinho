@@ -24,13 +24,13 @@ promessa guiou todas as decisões do produto.
 
 ## Como funciona
 
-| Aba | Para que serve |
-| --- | --- |
-| **Bora** | A tela do dia: compromissos de hoje, água, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado. |
-| **Tarefas** | Por área da vida ou na **matriz de priorização** (Fazer, Agendar, Simplificar, Eliminar), com arrastar e soltar. |
-| **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso. |
-| **Áreas** | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Quando o prazo vence, a área aparece na Bora para ser checada. |
-| **Coisinhas** | Listas leves: indicações (filmes, séries, livros) e hobbies para testar. |
+| Aba            | Para que serve                                                                                                                                                                                       |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bora**       | A tela do dia: compromissos de hoje, água, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado.                                                              |
+| **Tarefas**    | Por área da vida ou na **matriz de priorização** (Fazer, Agendar, Simplificar, Eliminar), com arrastar e soltar.                                                                                     |
+| **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso.                                                                                     |
+| **Áreas**      | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Quando o prazo vence, a área aparece na Bora para ser checada. |
+| **Coisinhas**  | Listas leves: indicações (filmes, séries, livros) e hobbies para testar.                                                                                                                             |
 
 <p>
   <img src="docs/img/bora-celular-escuro.png" alt="Bora no celular, modo escuro" width="300">
@@ -60,12 +60,12 @@ Bora). Cada lacuna virou uma regra:
 
 ## Como foi construído
 
-| Camada | Tecnologia |
-| --- | --- |
-| Interface | React 19, TypeScript, Vite, Tailwind CSS 4 |
-| API | Cloudflare Worker (Hono + TypeScript), no mesmo endereço do site |
-| Banco | PostgreSQL (Supabase), via Hyperdrive da Cloudflare |
-| Testes | Vitest e Testing Library (interface), Vitest contra um Postgres real (API) |
+| Camada    | Tecnologia                                                                 |
+| --------- | -------------------------------------------------------------------------- |
+| Interface | React 19, TypeScript, Vite, Tailwind CSS 4                                 |
+| API       | Cloudflare Worker (Hono + TypeScript), no mesmo endereço do site           |
+| Banco     | PostgreSQL (Supabase), via Hyperdrive da Cloudflare                        |
+| Testes    | Vitest e Testing Library (interface), Vitest contra um Postgres real (API) |
 
 Pontos que valem destaque:
 
@@ -102,9 +102,3 @@ cantinho/
 ├── worker/     # API (Cloudflare Worker), migrações do banco e testes
 └── docs/       # guia de desenvolvimento e imagens
 ```
-
-## Próximos passos
-
-- Notificações no celular. Hoje a Bora só mostra o que está pendente quando o app é aberto.
-- Mostrar na Bora os compromissos dos próximos dias, não só os de hoje.
-- Histórico do que foi concluído.
