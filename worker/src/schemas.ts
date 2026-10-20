@@ -106,7 +106,12 @@ type TaskInput = z.infer<typeof Task>
 export type EventInput = z.infer<typeof CalEvent>
 
 export const Credentials = z.object({
-  email: z.string().trim().max(320).email(),
+  username: z
+    .string()
+    .trim()
+    .min(3)
+    .max(30)
+    .regex(/^[A-Za-z0-9._-]+$/),
   password: z.string().min(1).max(128),
 })
 export const Registration = Credentials.extend({ password: z.string().min(8).max(128) })

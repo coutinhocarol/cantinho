@@ -15,14 +15,14 @@ beforeEach(async () => {
 
 describe('limite de contas', () => {
   it('recusa novas contas ao atingir o teto, com mensagem clara', async () => {
-    await loggedIn(db, 'a@example.com')
-    await loggedIn(db, 'b@example.com')
-    const res = await makeClient(db).post('/api/auth/register', { email: 'c@example.com', password: PW })
+    await loggedIn(db, 'alice')
+    await loggedIn(db, 'bruna')
+    const res = await makeClient(db).post('/api/auth/register', { username: 'carla', password: PW })
     expect(res.status).toBe(403)
     expect(res.body.code).toBe('users_limit')
     expect(res.body.detail).toMatch(/limite de contas/)
     // quem já tem conta continua entrando
-    const again = await makeClient(db).post('/api/auth/login', { email: 'a@example.com', password: PW })
+    const again = await makeClient(db).post('/api/auth/login', { username: 'alice', password: PW })
     expect(again.status).toBe(200)
   })
 })
@@ -48,7 +48,7 @@ describe('banco indisponível', () => {
   })
 
   it('uma sessão válida não vira "deslogado" quando o banco cai', async () => {
-    const ana = await loggedIn(db, 'ana@example.com')
+    const ana = await loggedIn(db, 'ana')
     const app = createApp({ connect: () => brokenDb('ECONNREFUSED') })
     const cookie = `cantinho_session=${ana.cookies.get('cantinho_session')}`
     const res = await app.request('/api/state', { headers: { Cookie: cookie } }, db.env)

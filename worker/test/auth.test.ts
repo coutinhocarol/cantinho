@@ -22,15 +22,15 @@ describe('proteção', () => {
 })
 
 describe('cadastro e login', () => {
-  it('cadastrar já entra; e-mail vira minúsculo; cookie é httpOnly', async () => {
+  it('cadastrar já entra; usuário vira minúsculo; cookie é httpOnly', async () => {
     const c = makeClient(db)
-    const res = await c.post('/api/auth/register', { email: 'Ana@Example.com', password: PW })
+    const res = await c.post('/api/auth/register', { username: 'Ana', password: PW })
     expect(res.status).toBe(201)
-    expect(res.body.email).toBe('ana@example.com')
+    expect(res.body.username).toBe('ana')
     const cookie = res.headers.get('set-cookie')!.toLowerCase()
     expect(cookie).toContain('httponly')
     expect(cookie).toContain('samesite=lax')
-    expect((await c.get('/api/auth/me')).body.email).toBe('ana@example.com')
+    expect((await c.get('/api/auth/me')).body.username).toBe('ana')
   })
 
   it('a senha é guardada com hash', async () => {
@@ -40,19 +40,19 @@ describe('cadastro e login', () => {
     expect(u.password_hash.startsWith('pbkdf2$sha256$')).toBe(true)
   })
 
-  it('valida e-mail, tamanho da senha e duplicidade', async () => {
+  it('valida usuário, tamanho da senha e duplicidade', async () => {
     const c = makeClient(db)
-    const post = (email: string, password: string) => c.post('/api/auth/register', { email, password })
-    expect((await post('nao-e-email', PW)).status).toBe(422)
-    expect((await post('a@example.com', 'curta')).status).toBe(422)
-    expect((await post('a@example.com', PW)).status).toBe(201)
-    expect((await post('A@example.com', PW)).status).toBe(409)
+    const post = (username: string, password: string) => c.post('/api/auth/register', { username, password })
+    expect((await post('a b!', PW)).status).toBe(422)
+    expect((await post('alice', 'curta')).status).toBe(422)
+    expect((await post('alice', PW)).status).toBe(201)
+    expect((await post('ALICE', PW)).status).toBe(409)
   })
 
   it('o cadastro pode ser desativado', async () => {
     const closed = await createTestDb({ ALLOW_REGISTRATION: 'false' })
     try {
-      const res = await makeClient(closed).post('/api/auth/register', { email: 'a@example.com', password: PW })
+      const res = await makeClient(closed).post('/api/auth/register', { username: 'alice', password: PW })
       expect(res.status).toBe(403)
     } finally {
       await closed.drop()
@@ -63,11 +63,11 @@ describe('cadastro e login', () => {
     const c = await loggedIn(db)
     await c.post('/api/auth/logout')
     expect((await c.get('/api/auth/me')).status).toBe(401)
-    const bad = await c.post('/api/auth/login', { email: 'ana@example.com', password: 'errada-errada' })
-    const unknown = await c.post('/api/auth/login', { email: 'ninguem@example.com', password: PW })
+    const bad = await c.post('/api/auth/login', { username: 'ana', password: 'errada-errada' })
+    const unknown = await c.post('/api/auth/login', { username: 'ninguem', password: PW })
     expect([bad.status, unknown.status]).toEqual([401, 401])
-    expect(unknown.body).toEqual(bad.body) // não revela se o e-mail existe
-    expect((await c.post('/api/auth/login', { email: 'ANA@example.com', password: PW })).status).toBe(200)
+    expect(unknown.body).toEqual(bad.body) // não revela se o usuário existe
+    expect((await c.post('/api/auth/login', { username: 'ANA', password: PW })).status).toBe(200)
     expect((await c.get('/api/auth/me')).status).toBe(200)
   })
 
@@ -84,7 +84,7 @@ describe('cadastro e login', () => {
   it('token assinado com outra chave é recusado', async () => {
     const other = await createTestDb({ JWT_SECRET: 'outra-chave-outra-chave-outra-chave' })
     try {
-      const intruder = await loggedIn(other, 'ana@example.com')
+      const intruder = await loggedIn(other, 'ana')
       const c = makeClient(db)
       c.cookies.set('cantinho_session', intruder.cookies.get('cantinho_session')!)
       expect((await c.get('/api/auth/me')).status).toBe(401)
@@ -96,8 +96,8 @@ describe('cadastro e login', () => {
 
 describe('isolamento entre usuários', () => {
   it('cada conta só vê os próprios dados, mesmo com ids iguais', async () => {
-    const ana = await loggedIn(db, 'ana@example.com')
-    const bia = await loggedIn(db, 'bia@example.com')
+    const ana = await loggedIn(db, 'ana')
+    const bia = await loggedIn(db, 'bia')
     await ana.put('/api/state', sampleState())
     expect((await bia.get('/api/state')).status).toBe(204)
 

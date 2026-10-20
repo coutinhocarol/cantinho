@@ -92,9 +92,9 @@ export function makeClient(db: TestDb): Client {
   }
 }
 
-export async function loggedIn(db: TestDb, email = 'ana@example.com'): Promise<Client> {
+export async function loggedIn(db: TestDb, username = 'ana'): Promise<Client> {
   const c = makeClient(db)
-  const res = await c.post('/api/auth/register', { email, password: PW })
+  const res = await c.post('/api/auth/register', { username, password: PW })
   if (res.status !== 201) throw new Error(`registro falhou: ${res.status} ${JSON.stringify(res.body)}`)
   return c
 }

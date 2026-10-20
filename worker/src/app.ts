@@ -30,7 +30,7 @@ interface Deps {
   release?(sql: Sql, c: Context): void
 }
 
-type Vars = { sql: Sql; user: { id: string; email: string } }
+type Vars = { sql: Sql; user: { id: string; username: string } }
 type Ctx = Context<{ Bindings: Env; Variables: Vars }>
 
 const SCHEMA_RE = /^[a-z_][a-z0-9_]*$/
@@ -82,7 +82,7 @@ export function createApp(deps: Deps) {
     return r.success ? { ok: true, data: r.data } : { ok: false }
   }
 
-  const startSession = async (c: Ctx, user: { id: string; email: string }) => {
+  const startSession = async (c: Ctx, user: { id: string; username: string }) => {
     const days = Number(c.env.SESSION_DAYS ?? 30)
     setCookie(c, COOKIE_NAME, await createToken(user.id, c.env.JWT_SECRET, days), {
       httpOnly: true,
@@ -91,7 +91,7 @@ export function createApp(deps: Deps) {
       path: '/',
       maxAge: days * 86400,
     })
-    return { id: user.id, email: user.email }
+    return { id: user.id, username: user.username }
   }
 
   const requireUser = async (c: Ctx, next: () => Promise<void>) => {
@@ -99,7 +99,7 @@ export function createApp(deps: Deps) {
     const id = token ? await readToken(token, c.env.JWT_SECRET) : null
     // se o banco falhar aqui o erro sobe (503), em vez de parecer "sessão expirada"
     const rows = id
-      ? await tx(c, (t) => t<{ id: string; email: string }[]>`select id, email from users where id::text = ${id}`)
+      ? await tx(c, (t) => t<{ id: string; username: string }[]>`select id, username from users where id::text = ${id}`)
       : []
     if (!rows[0]) return json(c, 401, 'Não autenticado')
     c.set('user', rows[0])
@@ -122,18 +122,18 @@ export function createApp(deps: Deps) {
     const [{ n }] = await tx(c, (t) => t<{ n: number }[]>`select count(*)::int as n from users`)
     if (n >= max)
       return json(c, 403, 'O limite de contas deste site foi atingido. Tente novamente mais tarde.', 'users_limit')
-    const email = body.data.email.toLowerCase()
+    const username = body.data.username.toLowerCase()
     const hash = await hashPassword(body.data.password)
     try {
       const [user] = await tx(
         c,
-        (t) => t<{ id: string; email: string }[]>`
-          insert into users (id, email, password_hash) values (gen_random_uuid(), ${email}, ${hash})
-          returning id, email`,
+        (t) => t<{ id: string; username: string }[]>`
+          insert into users (id, username, password_hash) values (gen_random_uuid(), ${username}, ${hash})
+          returning id, username`,
       )
       return c.json(await startSession(c, user), 201)
     } catch (e) {
-      if ((e as { code?: string }).code === '23505') return json(c, 409, 'Já existe uma conta com esse e-mail')
+      if ((e as { code?: string }).code === '23505') return json(c, 409, 'Esse usuário já está em uso')
       throw e
     }
   })
@@ -143,12 +143,12 @@ export function createApp(deps: Deps) {
     if (!body.ok) return json(c, 422, 'Dados inválidos')
     const [user] = await tx(
       c,
-      (t) => t<{ id: string; email: string; password_hash: string }[]>`
-        select id, email, password_hash from users where email = ${body.data.email.toLowerCase()}`,
+      (t) => t<{ id: string; username: string; password_hash: string }[]>`
+        select id, username, password_hash from users where username = ${body.data.username.toLowerCase()}`,
     )
-    // com e-mail inexistente a verificação roda do mesmo jeito (mesmo tempo de resposta)
+    // com usuário inexistente a verificação roda do mesmo jeito (mesmo tempo de resposta)
     if (!(await verifyPassword(user?.password_hash ?? null, body.data.password)) || !user)
-      return json(c, 401, 'E-mail ou senha incorretos')
+      return json(c, 401, 'Usuário ou senha incorretos')
     return c.json(await startSession(c, user))
   })
 

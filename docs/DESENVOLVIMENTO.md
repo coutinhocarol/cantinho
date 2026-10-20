@@ -103,7 +103,7 @@ Tabelas relacionais no PostgreSQL:
 
 | Tabela             | Conteúdo                                                                                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`            | contas (e-mail em minúsculas, senha com hash PBKDF2-SHA256 e sal)                                                                                    |
+| `users`            | contas (usuário em minúsculas, senha com hash PBKDF2-SHA256 e sal)                                                                                    |
 | `areas`            | nome, emoji, periodicidade (`interval_days` ou `weekly_days` + `weekly_time`), última checagem, ordem                                                |
 | `area_checks`      | histórico de checagens (FK → `areas`, cascade)                                                                                                       |
 | `tasks`            | título, quadrante, prazo, notas. FK → `areas` e → `events` com `ON DELETE SET NULL`: **apagar uma área não apaga as tarefas, elas ficam "sem área"** |
@@ -126,9 +126,9 @@ o app continua funcionando e avisa uma vez que os dados ficam só neste aparelho
 
 ## Login
 
-- Criar conta e entrar com e-mail e senha (mínimo 8 caracteres); botão **Sair** no topo.
+- Criar conta e entrar com usuário (3 a 30 letras, números, ponto, hífen ou _) e senha (mínimo 8 caracteres); botão **Sair** no topo.
 - A sessão é um JWT num cookie `httpOnly` + `SameSite=Lax` (30 dias; muda com `SESSION_DAYS`),
   assinado com `JWT_SECRET`.
   O JavaScript da página nunca enxerga o token. Trocar o `JWT_SECRET` desloga todo mundo.
-- O erro de login é o mesmo para e-mail inexistente e senha errada.
+- O erro de login é o mesmo para usuário inexistente e senha errada.
 - Ao sair, a cópia local dos dados daquela conta é apagada do navegador.

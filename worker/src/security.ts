@@ -34,7 +34,7 @@ export async function hashPassword(password: string, iterations = PBKDF2_ITERATI
   return `pbkdf2$sha256$${iterations}$${b64(salt)}$${b64(hash)}`
 }
 
-/** Comparação em tempo constante. Com `hash` nulo (e-mail inexistente) gasta o mesmo tempo e falha. */
+/** Comparação em tempo constante. Com `hash` nulo (usuário inexistente) gasta o mesmo tempo e falha. */
 export async function verifyPassword(hash: string | null, password: string): Promise<boolean> {
   const parts = hash?.split('$') ?? []
   const valid = parts.length === 5 && parts[0] === 'pbkdf2' && parts[1] === 'sha256'

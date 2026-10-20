@@ -56,11 +56,11 @@ interface InfoState {
 
 export default function App({
   store,
-  userEmail,
+  username,
   onLogout,
 }: {
   store: Store
-  userEmail?: string
+  username?: string
   onLogout?: () => void
 }) {
   const state = useSyncExternalStore(store.subscribe, store.getState)
@@ -207,7 +207,7 @@ export default function App({
             ))}
           </nav>
           {onLogout ? (
-            <button type="button" className="btn ghost" title={userEmail} onClick={onLogout}>
+            <button type="button" className="btn ghost" title={username} onClick={onLogout}>
               Sair
             </button>
           ) : null}

@@ -2,7 +2,7 @@ import { failureFromResponse, networkFailure } from './failure'
 
 export interface User {
   id: string
-  email: string
+  username: string
 }
 
 export class AuthError extends Error {
@@ -16,8 +16,8 @@ export class AuthError extends Error {
 /** Contrato de login com o backend (`/api/auth/*`). A sessão vai num cookie httpOnly. */
 export interface AuthApi {
   me(): Promise<User | null>
-  login(email: string, password: string): Promise<User>
-  register(email: string, password: string): Promise<User>
+  login(username: string, password: string): Promise<User>
+  register(username: string, password: string): Promise<User>
   logout(): Promise<void>
 }
 
@@ -31,7 +31,7 @@ async function readError(res: Response): Promise<Error> {
   } catch {
     /* sem corpo */
   }
-  if (res.status === 422) msg = 'Confira o e-mail e use uma senha de pelo menos 8 caracteres.'
+  if (res.status === 422) msg = 'Confira o usuário (3 a 30 letras, números, ponto, hífen ou _) e use uma senha de pelo menos 8 caracteres.'
   return new AuthError(res.status, msg || `Erro ${res.status}`)
 }
 
@@ -56,13 +56,13 @@ export function createHttpAuth(base = '/api'): AuthApi {
       if (!res.ok) throw await readError(res)
       return (await res.json()) as User
     },
-    async login(email, password) {
-      const res = await post('/auth/login', { email, password })
+    async login(username, password) {
+      const res = await post('/auth/login', { username, password })
       if (!res.ok) throw await readError(res)
       return (await res.json()) as User
     },
-    async register(email, password) {
-      const res = await post('/auth/register', { email, password })
+    async register(username, password) {
+      const res = await post('/auth/register', { username, password })
       if (!res.ok) throw await readError(res)
       return (await res.json()) as User
     },

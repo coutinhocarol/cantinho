@@ -17,15 +17,15 @@ export function LoginScreen({
   notice?: string
 }) {
   const [mode, setMode] = useState<Mode>('login')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [err, setErr] = useState(notice)
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim() || !password) {
-      setErr('Preencha o e-mail e a senha.')
+    if (!username.trim() || !password) {
+      setErr('Preencha o usuário e a senha.')
       return
     }
     if (mode === 'register' && password.length < 8) {
@@ -37,8 +37,8 @@ export function LoginScreen({
     try {
       const user =
         mode === 'login'
-          ? await auth.login(email.trim(), password)
-          : await auth.register(email.trim(), password)
+          ? await auth.login(username.trim(), password)
+          : await auth.register(username.trim(), password)
       onDone(user)
     } catch (e) {
       setErr(
@@ -85,17 +85,20 @@ export function LoginScreen({
           </button>
         </div>
         <div className="tw:text-left">
-          <label className="lbl" htmlFor="auth-email">
-            E-mail
+          <label className="lbl" htmlFor="auth-username">
+            Usuário
           </label>
           <input
             className="field"
-            id="auth-email"
-            type="email"
-            autoComplete="email"
+            id="auth-username"
+            type="text"
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
           />
         </div>
         <div className="tw:mt-[12px] tw:text-left">

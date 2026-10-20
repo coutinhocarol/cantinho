@@ -41,5 +41,5 @@ function LoggedIn({ user, auth, onExit }: { user: User; auth: AuthApi; onExit: (
     store.clearLocal()
     onExit()
   }
-  return <App store={store} userEmail={user.email} onLogout={logout} />
+  return <App store={store} username={user.username} onLogout={logout} />
 }
