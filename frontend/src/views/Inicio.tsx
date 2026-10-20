@@ -345,7 +345,7 @@ export function Inicio() {
                   <div className="sec-head">
                     <h2>Compromissos que ficaram pra trás</h2>
                     <Count n={missed.length} />
-                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário; confirme a exclusão de cada um depois de decidir o que fazer (se ainda vale, crie de novo no Calendário)." />
+                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário (num compromisso que se repete, só aquele dia; a série continua). Confirme a exclusão de cada um depois de decidir o que fazer: se ainda vale, crie de novo no Calendário." />
                   </div>
                   <div className="missed-list">
                     {missed.map((m) => (
@@ -366,7 +366,7 @@ export function Inicio() {
                   <div className="sec-head">
                     <h2>Repriorizar tarefas</h2>
                     <Count n={reprioPending ? 1 : 0} />
-                    <InfoButton text="Todo dia, revise a matriz de priorização: o que mudou de quadrante, o que já pode ser eliminado. Marque como feito depois de revisar; amanhã a pendência volta." />
+                    <InfoButton text="Todo dia, revise a matriz de priorização: o que mudou de quadrante, o que já pode ser eliminado. Marque como feito depois de revisar; amanhã a pendência volta. Só aparece quando há tarefas em aberto." />
                   </div>
                   {!openCount ? (
                     <p className="sub">Nenhuma tarefa para repriorizar.</p>
@@ -404,7 +404,7 @@ export function Inicio() {
                   <div className="sec-head">
                     <h2>Tarefas pendentes</h2>
                     <Count n={pend.length} />
-                    <InfoButton text="Mostra as tarefas dos quadrantes Fazer e Simplificar e também qualquer tarefa com prazo vencido ou até depois de amanhã, em qualquer quadrante. Ordem: pelo prazo e, com o mesmo prazo, Fazer antes de Simplificar." />
+                    <InfoButton text="Mostra as tarefas dos quadrantes Fazer e Simplificar e também qualquer tarefa com prazo vencido ou até depois de amanhã, em qualquer quadrante. Prazo vencido ou de hoje ganha o alerta ⚠️. Ordem: pelo prazo (sem prazo por último) e, com o mesmo prazo, Fazer, depois Simplificar, depois os demais quadrantes." />
                   </div>
                   {tasksNode}
                 </div>
