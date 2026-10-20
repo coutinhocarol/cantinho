@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { IconCheck, IconChevL, IconChevR, IconPlus } from '../components/icons'
+import { dueAlertLabel } from '../components/taskParts'
 import { REPEAT_LABEL, eventsOn, isEvDone, isRepeating } from '../lib/events'
 import type { AppState, CalEvent } from '../lib/types'
 import { capitalize, parseYmd, ymd } from '../lib/time'
@@ -13,7 +14,17 @@ function weekStartOf(key: string) {
 
 function linkedTaskLine(state: AppState, e: CalEvent) {
   const l = state.tasks.filter((t) => t.eventId === e.id)
-  return l.length ? <span>{`🔗 ${l.map((t) => t.title).join(', ')}`}</span> : null
+  return l.length ? (
+    <span>
+      {l.map((t, i) => (
+        <span key={t.id}>
+          {i ? ', ' : ''}
+          {`🔗 ${t.title}`}
+          {dueAlertLabel(t) ? <b className="alert-inline">{` ${dueAlertLabel(t)}`}</b> : null}
+        </span>
+      ))}
+    </span>
+  ) : null
 }
 
 interface WkDrag {
@@ -82,7 +93,17 @@ function WeekEvent({
         onClick={() => openDialog({ kind: 'event', id: e.id })}
       >
         <span className="wk-title">{e.title}</span>
-        {lt.length ? <span className="wk-link">{`🔗 ${lt.map((t) => t.title).join(', ')}`}</span> : null}
+        {lt.length ? (
+          <span className="wk-link">
+            {lt.map((t, i) => (
+              <span key={t.id}>
+                {i ? ', ' : ''}
+                {`🔗 ${t.title}`}
+                {dueAlertLabel(t) ? <b className="alert-inline">{` ${dueAlertLabel(t)}`}</b> : null}
+              </span>
+            ))}
+          </span>
+        ) : null}
       </button>
     </div>
   )

@@ -35,7 +35,7 @@ function initialUi(): UiState {
     calView: ls('cantinho-calview') === 'semana' ? 'semana' : 'mes',
     calSel: ymd(t),
     calMonth: { y: t.getFullYear(), m: t.getMonth() },
-    listTab: 'compras',
+    listTab: 'indicacoes',
   }
 }
 

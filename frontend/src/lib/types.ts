@@ -1,6 +1,6 @@
 export type QuadId = 'fazer' | 'agendar' | 'delegar' | 'eliminar'
 export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
-export type ListId = 'compras' | 'indicacoes' | 'hobbies'
+export type ListId = 'indicacoes' | 'hobbies'
 export type KindId = 'filme' | 'serie' | 'livro' | 'outro'
 
 interface IntervalPeriod {
@@ -57,6 +57,22 @@ export interface CalEvent {
   doneDates?: string[]
 }
 
+/** Compromisso (ou ocorrência de um que se repete) que passou sem ser marcado como feito. */
+export interface MissedEvent {
+  /** `${id do compromisso}:${data}`: igual em qualquer aparelho, evita duplicar. */
+  id: string
+  eventId: string
+  title: string
+  date: string
+  allDay: boolean
+  start: string
+  end: string
+  repeat: Repeat
+  notes: string
+  /** Tarefas que estavam ligadas ao compromisso quando ele foi recolhido. */
+  taskIds: string[]
+}
+
 export interface ListItem {
   id: string
   title: string
@@ -79,6 +95,9 @@ export interface AppState {
   events: CalEvent[]
   water: Water
   lists: Record<ListId, ListItem[]>
+  missed: MissedEvent[]
+  /** Último dia (aaaa-mm-dd) em que as tarefas foram repriorizadas na matriz. */
+  reprioDate: string
 }
 
 export interface Quad {

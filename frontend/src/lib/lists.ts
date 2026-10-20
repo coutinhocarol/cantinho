@@ -12,14 +12,6 @@ export interface ListDef {
 
 export const LISTS: ListDef[] = [
   {
-    id: 'compras',
-    title: 'Compras',
-    tab: 'Compras',
-    ph: 'Adicionar item…',
-    empty: 'Nada na lista de compras.',
-    done: 'Item comprado',
-  },
-  {
     id: 'indicacoes',
     title: 'Indicações',
     tab: 'Indicações',

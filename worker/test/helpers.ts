@@ -3,7 +3,7 @@
  * no fim. As tabelas reais do schema `public` não são tocadas.
  */
 import { randomBytes } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import postgres from 'postgres'
 import type { Sql } from 'postgres'
@@ -36,7 +36,9 @@ export async function createTestDb(extra: Partial<Env> = {}): Promise<TestDb> {
       await t.unsafe(`set local search_path to "${schema}"`)
       return fn(t as unknown as Sql)
     }) as Promise<T>
-  await run((t) => t.unsafe(readFileSync(join(import.meta.dirname, '../migrations/0001_tabelas_do_cantinho.sql'), 'utf8')))
+  const dir = join(import.meta.dirname, '../migrations')
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort())
+    await run((t) => t.unsafe(readFileSync(join(dir, f), 'utf8')))
   return {
     sql,
     schema,
@@ -144,8 +146,14 @@ export const sampleState = () => ({
   ],
   water: { goal: 8, date: '2026-10-19', count: 3, v2: true },
   lists: {
-    compras: [{ id: 'c1', title: 'Leite', createdAt: 1729000000001 }],
     indicacoes: [{ id: 'i1', title: 'Parasita', kind: 'filme', note: 'Netflix', createdAt: 1729000000002 }],
-    hobbies: [],
+    hobbies: [{ id: 'h1', title: 'Cerâmica', createdAt: 1729000000001 }],
   },
+  missed: [
+    {
+      id: 'e0:2026-10-18', eventId: 'e0', title: 'Dentista', date: '2026-10-18', allDay: false, start: '15:00',
+      end: '16:00', repeat: 'none', notes: 'levar exames', taskIds: ['t1'],
+    },
+  ],
+  reprioDate: '2026-10-19',
 })

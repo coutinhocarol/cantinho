@@ -9,7 +9,7 @@ import type { AppStateInput, AreaInput, EventInput } from './schemas'
 
 export class StateError extends Error {}
 
-const LIST_NAMES = ['compras', 'indicacoes', 'hobbies'] as const
+const LIST_NAMES = ['indicacoes', 'hobbies'] as const
 
 // ---------- conversões ----------
 const ts = (ms: number | null | undefined) => (ms == null ? null : new Date(ms))
@@ -132,11 +132,37 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
       created_at: ts(it.createdAt) ?? new Date(),
     })),
   )
-  await prune('list_items', new Set(items.map((i) => i.id)))
+  // só as listas atuais: linhas de listas que saíram do app (ex.: compras) ficam intactas
+  const keepItems = new Set(items.map((i) => i.id))
+  const itemRows = await tx<{ id: string }[]>`select id from list_items
+    where user_id = ${userId} and list_name in ${tx([...LIST_NAMES])}`
+  const goneItems = itemRows.map((r) => r.id).filter((id) => !keepItems.has(id))
+  if (goneItems.length) await tx`delete from list_items where user_id = ${userId} and id in ${tx(goneItems)}`
   if (items.length)
     await tx`insert into list_items ${tx(items)}
       on conflict (user_id, id) do update set list_name = excluded.list_name, title = excluded.title,
         kind = excluded.kind, note = excluded.note, created_at = excluded.created_at`
+
+  // compromissos que passaram sem ser marcados (aguardam confirmação de exclusão)
+  await tx`delete from missed_events where user_id = ${userId}`
+  const missedRows = st.missed.map((m) => ({
+    user_id: userId,
+    id: m.id,
+    event_id: m.eventId,
+    title: m.title,
+    date: isoDate(m.date),
+    all_day: !!m.allDay,
+    start_time: m.allDay ? null : clockTime(m.start),
+    end_time: m.allDay ? null : clockTime(m.end),
+    repeat: m.repeat || 'none',
+    notes: m.notes ?? '',
+    task_ids: tx.json(m.taskIds ?? []),
+  }))
+  if (missedRows.length) await tx`insert into missed_events ${tx(missedRows)} on conflict (user_id, id) do nothing`
+
+  // dia da última repriorização das tarefas
+  await tx`insert into user_state (user_id, reprio_day) values (${userId}, ${isoDate(st.reprioDate)})
+    on conflict (user_id) do update set reprio_day = excluded.reprio_day`
 
   // água
   const goal = Math.max(1, Math.min(30, Math.trunc(st.water.goal)))
@@ -178,7 +204,7 @@ export async function loadState(tx: Sql, userId: string) {
     select goal, ${tx.unsafe(iso('day'))} as day, count from water where user_id = ${userId}`
   if (!water) return null
 
-  const [areas, checks, tasks, events, doneDates, items] = await Promise.all([
+  const [areas, checks, tasks, events, doneDates, items, missed, [userState]] = await Promise.all([
     tx<Record<string, any>[]>`select id, name, emoji, color, period_type, interval_days,
         to_json(weekly_days) as weekly_days, ${tx.unsafe(hhmm('weekly_time'))} as weekly_time,
         ${tx.unsafe(ms('last_done'))} as last_done, ${tx.unsafe(ms('ok_at'))} as ok_at,
@@ -198,6 +224,12 @@ export async function loadState(tx: Sql, userId: string) {
       from event_done_dates where user_id = ${userId} order by done_date`,
     tx<Record<string, any>[]>`select id, list_name, title, kind, note, ${tx.unsafe(ms('created_at'))} as created_at
       from list_items where user_id = ${userId} order by created_at, id`,
+    tx<Record<string, any>[]>`select id, event_id, title, ${tx.unsafe(iso('date'))} as date, all_day,
+        ${tx.unsafe(hhmm('start_time'))} as start_time, ${tx.unsafe(hhmm('end_time'))} as end_time,
+        repeat, notes, task_ids
+      from missed_events where user_id = ${userId} order by date, id`,
+    tx<{ reprio_day: string | null }[]>`select ${tx.unsafe(iso('reprio_day'))} as reprio_day
+      from user_state where user_id = ${userId}`,
   ])
 
   const history = new Map<string, number[]>()
@@ -205,9 +237,9 @@ export async function loadState(tx: Sql, userId: string) {
   const done = new Map<string, string[]>()
   for (const d of doneDates) done.set(d.event_id, [...(done.get(d.event_id) ?? []), d.d])
 
-  const lists: Record<string, Record<string, unknown>[]> = { compras: [], indicacoes: [], hobbies: [] }
+  const lists: Record<string, Record<string, unknown>[]> = { indicacoes: [], hobbies: [] }
   for (const i of items) {
-    lists[i.list_name].push({
+    lists[i.list_name]?.push({
       id: i.id,
       title: i.title,
       createdAt: round(i.created_at),
@@ -262,5 +294,18 @@ export async function loadState(tx: Sql, userId: string) {
     })),
     water: { goal: water.goal, date: water.day ?? '', count: water.count, v2: true },
     lists,
+    missed: missed.map((m) => ({
+      id: m.id,
+      eventId: m.event_id,
+      title: m.title,
+      date: m.date,
+      allDay: m.all_day,
+      start: m.start_time ?? '',
+      end: m.end_time ?? '',
+      repeat: m.repeat,
+      notes: m.notes,
+      taskIds: m.task_ids ?? [],
+    })),
+    reprioDate: userState?.reprio_day ?? '',
   }
 }

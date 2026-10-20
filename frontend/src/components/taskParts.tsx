@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import type { AppCtx } from '../app/context'
 import { quadById } from '../lib/areas'
 import { eventById } from '../lib/events'
+import { dueStatus } from '../lib/tasks'
 import type { Task } from '../lib/types'
 import { fmtDayMonth, parseYmd } from '../lib/time'
 
@@ -52,13 +53,29 @@ export function linkChip(c: Ctx, t: Task): ReactNode | null {
   )
 }
 
+/**
+ * Prazo da tarefa. Vencido ou de hoje vira o alerta ⚠️ (o mesmo em qualquer tela onde a tarefa
+ * aparece); amanhã e depois de amanhã mantêm a etiqueta comum.
+ */
+export function dueAlertLabel(t: Task): string | null {
+  const st = dueStatus(t)
+  if (st === 'late') return `⚠️ Atrasada · ${fmtDayMonth(parseYmd(t.due))}`
+  if (st === 'today') return '⚠️ Vence hoje'
+  return null
+}
+
 export function dueTag(t: Task): ReactNode | null {
   if (!t.due) return null
-  const d = new Date(t.due + 'T23:59:59').getTime()
-  const late = !t.done && d < Date.now()
-  const txt = fmtDayMonth(new Date(d))
+  const txt = fmtDayMonth(parseYmd(t.due))
+  const alert = dueAlertLabel(t)
+  if (alert)
+    return (
+      <span className="chip alert" title={dueStatus(t) === 'late' ? `Atrasada, prazo ${txt}` : 'Prazo hoje'}>
+        {alert}
+      </span>
+    )
   return (
-    <span className="chip" title={`${late ? 'Atrasada, prazo ' : 'Prazo '}${txt}`}>
+    <span className="chip" title={`Prazo ${txt}`}>
       {`⏳ ${txt}`}
     </span>
   )
@@ -78,6 +95,28 @@ export function TaskTags({ c, t, noQuad }: { c: Ctx; t: Task; noQuad?: boolean }
       {linkChip(c, t)}
       {dueTag(t)}
       {notesTag(t)}
+    </span>
+  )
+}
+
+/** Tarefas ligadas a um compromisso, com o mesmo alerta de prazo das demais telas. */
+export function LinkedTasks({ c, eventId }: { c: Ctx; eventId: string }) {
+  const tasks = c.state.tasks.filter((t) => t.eventId === eventId && !t.done)
+  if (!tasks.length) return null
+  return (
+    <span className="linked-tasks">
+      {tasks.map((t) => (
+        <span className="linked-task" key={t.id}>
+          <button
+            type="button"
+            className="linked-title"
+            onClick={() => c.openDialog({ kind: 'task', id: t.id })}
+          >
+            {`🔗 ${t.title}`}
+          </button>
+          {dueTag(t)}
+        </span>
+      ))}
     </span>
   )
 }

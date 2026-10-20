@@ -64,6 +64,19 @@ const ListItem = z.object({
   note: opt(z.string()),
 })
 
+const MissedEvent = z.object({
+  id: z.string().min(1).max(64),
+  eventId: z.string().min(1).max(64),
+  title: z.string(),
+  date: z.string(),
+  allDay: opt(z.boolean()),
+  start: opt(z.string()),
+  end: opt(z.string()),
+  repeat: opt(z.string()),
+  notes: opt(z.string()),
+  taskIds: opt(z.array(z.string())),
+})
+
 const list = <T extends z.ZodType>(t: T) => z.array(t).max(MAX_ITEMS).default([])
 
 export const AppStateSchema = z.object({
@@ -81,11 +94,12 @@ export const AppStateSchema = z.object({
     .default({ goal: 10, date: '', count: 0, v2: true }),
   lists: z
     .object({
-      compras: list(ListItem),
       indicacoes: list(ListItem),
       hobbies: list(ListItem),
     })
-    .default({ compras: [], indicacoes: [], hobbies: [] }),
+    .default({ indicacoes: [], hobbies: [] }),
+  missed: list(MissedEvent),
+  reprioDate: z.string().nullish(),
 })
 
 export type AppStateInput = z.infer<typeof AppStateSchema>

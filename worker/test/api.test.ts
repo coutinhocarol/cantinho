@@ -56,7 +56,9 @@ describe('/api/state', () => {
     expect([e2.allDay, e2.start, e2.end, e2.notes]).toEqual([true, '', '', 'sem trabalho'])
 
     expect(saved.water).toEqual({ goal: 8, date: '2026-10-19', count: 3, v2: true })
-    expect(saved.lists.compras[0].title).toBe('Leite')
+    expect(saved.lists.hobbies[0].title).toBe('Cerâmica')
+    expect(saved.missed).toEqual(sampleState().missed)
+    expect(saved.reprioDate).toBe('2026-10-19')
     expect(saved.lists.indicacoes[0]).toMatchObject({ id: 'i1', title: 'Parasita', kind: 'filme', note: 'Netflix' })
   })
 
@@ -72,6 +74,18 @@ describe('/api/state', () => {
     expect(t).toEqual({ area_id: 'a1', event_id: 'e1' })
   })
 
+  it('linhas da lista de compras (que saiu do app) não são lidas nem apagadas', async () => {
+    await client.put('/api/state', sampleState())
+    await db.run(
+      (t) => t`insert into list_items (user_id, id, list_name, title) select user_id, 'velho', 'compras', 'Leite' from list_items limit 1`,
+    )
+    const saved = (await client.get('/api/state')).body
+    expect(saved.lists.compras).toBeUndefined()
+    expect(saved.lists.hobbies).toHaveLength(1)
+    await client.put('/api/state', saved)
+    expect(await count('list_items')).toBe(3)
+  })
+
   it('salvar duas vezes dá o mesmo resultado', async () => {
     await client.put('/api/state', sampleState())
     const first = (await client.get('/api/state')).body
@@ -84,13 +98,15 @@ describe('/api/state', () => {
     const s = sampleState()
     s.tasks = [s.tasks[1]]
     s.events = [s.events[1]]
-    s.lists.compras = []
+    s.lists.hobbies = []
+    s.missed = []
     s.areas[0].history = [1729300000000]
     expect((await client.put('/api/state', s)).status).toBe(200)
     const saved = (await client.get('/api/state')).body
     expect(saved.tasks.map((t: any) => t.id)).toEqual(['t2'])
     expect(saved.events.map((e: any) => e.id)).toEqual(['e2'])
-    expect(saved.lists.compras).toEqual([])
+    expect(saved.lists.hobbies).toEqual([])
+    expect(saved.missed).toEqual([])
     expect(saved.areas[0].history).toEqual([1729300000000])
     expect(await count('event_done_dates')).toBe(0)
   })

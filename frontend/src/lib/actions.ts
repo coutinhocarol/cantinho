@@ -14,6 +14,8 @@ export interface Actions {
   addListItem(list: ListId, title: string): void
   doneListItem(list: ListId, itemId: string, msg: string): void
   setWater(i: number): void
+  confirmMissed(id: string): void
+  doneReprio(): void
   forceAll(): void
   forceDue(id: string): void
   reorderAreas(ids: string[]): void
@@ -160,6 +162,32 @@ export function createActions(store: Store, toast: ToastFn): Actions {
       )
     },
 
+    confirmMissed(id) {
+      const m = get().missed.find((x) => x.id === id)
+      if (!m) return
+      const copy = { ...m }
+      commit((d) => {
+        d.missed = d.missed.filter((x) => x.id !== id)
+      })
+      toast('Exclusão confirmada', () =>
+        commit((d) => {
+          if (!d.missed.some((x) => x.id === copy.id)) d.missed.push(copy)
+        }),
+      )
+    },
+
+    doneReprio() {
+      const prev = get().reprioDate
+      commit((d) => {
+        d.reprioDate = ymd(new Date())
+      })
+      toast('Tarefas repriorizadas por hoje', () =>
+        commit((d) => {
+          d.reprioDate = prev
+        }),
+      )
+    },
+
     setWater(i) {
       const s = get()
       const cur = waterCount(s)
@@ -262,10 +290,6 @@ export function createActions(store: Store, toast: ToastFn): Actions {
           { id: uid(), title: 'Pagar a fatura do cartão', quad: 'fazer', areaId: f, ...base },
         )
         const dk = (n: number) => ymd(new Date(Date.now() + n * DAY))
-        s.lists.compras.push(
-          { id: uid(), title: 'Leite', createdAt: now },
-          { id: uid(), title: 'Pão', createdAt: now + 1 },
-        )
         s.lists.indicacoes.push(
           { id: uid(), title: 'Cem anos de solidão', kind: 'livro', createdAt: now },
           { id: uid(), title: 'Parasita', kind: 'filme', createdAt: now + 1 },

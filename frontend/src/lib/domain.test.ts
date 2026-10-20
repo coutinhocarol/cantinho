@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaStatus, periodText } from './areas'
 import { eventsOn, occursOn, pruneEvents } from './events'
+import { dueStatus, organizeTasks, pendingTasks } from './tasks'
 import { emptyState, hasData, mergeLocalInto, normalize, waterCount, waterGoal } from './state'
-import type { Area, AppState, CalEvent } from './types'
+import type { Area, AppState, CalEvent, Task } from './types'
 import { DAY, firstChar, rel, ymd } from './time'
 
 // Quarta-feira, 21/10/2026, meio-dia
@@ -158,11 +159,36 @@ describe('eventsOn', () => {
 })
 
 describe('pruneEvents', () => {
-  it('remove compromissos únicos que já passaram', () => {
+  it('recolhe compromissos únicos que já passaram e guarda para confirmar', () => {
     const s = emptyState()
     s.events = [ev({ id: 'old', date: '2026-10-20' }), ev({ id: 'today' })]
     expect(pruneEvents(s, NOW)).toBe(true)
     expect(s.events.map((e) => e.id)).toEqual(['today'])
+    expect(s.missed).toMatchObject([{ id: 'old:2026-10-20', eventId: 'old', title: 'Yoga', date: '2026-10-20' }])
+  })
+  it('guarda as tarefas que estavam ligadas ao compromisso perdido', () => {
+    const s = emptyState()
+    s.events = [ev({ id: 'old', date: '2026-10-20' })]
+    s.tasks = [tk({ id: 't', eventId: 'old' })]
+    pruneEvents(s, NOW)
+    expect(s.missed[0].taskIds).toEqual(['t'])
+  })
+  it('cada dia perdido de um compromisso que se repete vira um item', () => {
+    const s = emptyState()
+    s.events = [
+      ev({ id: 'd', repeat: 'daily', origin: '2026-10-18', date: '2026-10-18', doneDates: ['2026-10-19'] }),
+    ]
+    pruneEvents(s, NOW)
+    expect(s.missed.map((m) => m.date)).toEqual(['2026-10-18', '2026-10-20'])
+    expect(s.events[0].date).toBe('2026-10-21')
+  })
+  it('não duplica o que já está pendente de confirmação', () => {
+    const s = emptyState()
+    s.events = [ev({ id: 'old', date: '2026-10-20' })]
+    pruneEvents(s, NOW)
+    s.events = [ev({ id: 'old', date: '2026-10-20' })]
+    pruneEvents(s, NOW)
+    expect(s.missed).toHaveLength(1)
   })
   it('avança compromissos que se repetem para a próxima ocorrência', () => {
     const s = emptyState()
@@ -239,7 +265,8 @@ describe('normalize', () => {
     ;(s as Partial<AppState>).lists = undefined
     ;(s as Partial<AppState>).events = undefined
     normalize(s, NOW)
-    expect(s.lists).toEqual({ compras: [], indicacoes: [], hobbies: [] })
+    expect(s.lists).toEqual({ indicacoes: [], hobbies: [] })
+    expect(s.missed).toEqual([])
     expect(s.events).toEqual([])
   })
 })
@@ -263,10 +290,10 @@ describe('mergeLocalInto / hasData', () => {
   it('mantém a conta e acrescenta só o que é novo deste aparelho', () => {
     const remote = emptyState()
     remote.areas = [area({ id: 'r', name: 'Da conta' })]
-    remote.lists.compras = [{ id: 'c1', title: 'Leite', createdAt: 1 }]
+    remote.lists.hobbies = [{ id: 'c1', title: 'Leite', createdAt: 1 }]
     const local = emptyState()
     local.areas = [area({ id: 'r', name: 'Local diferente' }), area({ id: 'l', name: 'Só aqui' })]
-    local.lists.compras = [
+    local.lists.hobbies = [
       { id: 'c1', title: 'Leite (local)', createdAt: 1 },
       { id: 'c2', title: 'Pão', createdAt: 2 },
     ]
@@ -275,8 +302,8 @@ describe('mergeLocalInto / hasData', () => {
       ['r', 'Da conta'],
       ['l', 'Só aqui'],
     ])
-    expect(out.lists.compras.map((i) => i.id)).toEqual(['c1', 'c2'])
-    expect(out.lists.compras[0].title).toBe('Leite')
+    expect(out.lists.hobbies.map((i) => i.id)).toEqual(['c1', 'c2'])
+    expect(out.lists.hobbies[0].title).toBe('Leite')
   })
   it('hasData', () => {
     expect(hasData(emptyState())).toBe(false)
@@ -300,5 +327,42 @@ describe('time', () => {
     expect(rel(now + DAY, now)).toBe('amanhã')
     expect(rel(now - 3 * DAY, now)).toBe('há 3 dias')
     expect(rel(now + 2 * 36e5, now)).toBe('em 2 horas')
+  })
+})
+
+const tk = (over: Partial<Task> = {}): Task => ({
+  id: 't1',
+  title: 'Tarefa',
+  areaId: 'a1',
+  notes: '',
+  due: '',
+  done: false,
+  doneAt: null,
+  createdAt: 0,
+  ...over,
+})
+
+describe('prazo das tarefas', () => {
+  it('classifica vencido, hoje, amanhã/depois de amanhã e distante', () => {
+    expect(dueStatus({ due: '' }, NOW)).toBeNull()
+    expect(dueStatus({ due: '2026-10-20' }, NOW)).toBe('late')
+    expect(dueStatus({ due: '2026-10-21' }, NOW)).toBe('today')
+    expect(dueStatus({ due: '2026-10-22' }, NOW)).toBe('soon')
+    expect(dueStatus({ due: '2026-10-23' }, NOW)).toBe('soon')
+    expect(dueStatus({ due: '2026-10-24' }, NOW)).toBeNull()
+  })
+  it('prazo próximo leva a tarefa para pendentes em qualquer quadrante', () => {
+    const s = emptyState()
+    s.tasks = [
+      tk({ id: 'elim', quad: 'eliminar', due: '2026-10-23' }),
+      tk({ id: 'atrasada', quad: 'agendar', eventId: 'e', due: '2026-10-01' }),
+      tk({ id: 'livre', quad: '', due: '2026-10-21' }),
+      tk({ id: 'longe', quad: 'eliminar', due: '2026-12-01' }),
+      tk({ id: 'fazer', quad: 'fazer' }),
+      tk({ id: 'sem', quad: '' }),
+    ]
+    s.events = [ev({ id: 'e', date: '2026-10-30' })]
+    expect(pendingTasks(s, NOW).map((t) => t.id)).toEqual(['elim', 'atrasada', 'livre', 'fazer'])
+    expect(organizeTasks(s, NOW).map((t) => t.id)).toEqual(['sem'])
   })
 })

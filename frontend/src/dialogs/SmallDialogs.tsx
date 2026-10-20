@@ -61,7 +61,7 @@ export function ListItemDialog({ list, id }: { list: ListId; id: string }) {
       <h2>Editar item</h2>
       <div>
         <label className="lbl" htmlFor="li-title">
-          {L.id === 'compras' ? 'Item' : L.id === 'hobbies' ? 'Hobby' : 'Título'}
+          {L.id === 'hobbies' ? 'Hobby' : 'Título'}
         </label>
         <input
           className="field"
@@ -104,9 +104,7 @@ export function ListItemDialog({ list, id }: { list: ListId; id: string }) {
           placeholder={
             L.kinds
               ? 'Quem indicou, onde assistir ou ler…'
-              : L.id === 'compras'
-                ? 'Marca, quantidade, onde comprar…'
-                : 'Por que quer experimentar, o que precisa…'
+              : 'Por que quer experimentar, o que precisa…'
           }
         />
       </div>

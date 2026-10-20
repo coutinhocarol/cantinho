@@ -2,7 +2,7 @@ import type { AppState, ListId, Period } from './types'
 import { pruneEvents, eventById } from './events'
 import { clamp, ymd } from './time'
 
-const LIST_IDS: ListId[] = ['compras', 'indicacoes', 'hobbies']
+const LIST_IDS: ListId[] = ['indicacoes', 'hobbies']
 
 export const emptyState = (): AppState => ({
   v: 1,
@@ -10,7 +10,9 @@ export const emptyState = (): AppState => ({
   tasks: [],
   events: [],
   water: { goal: 10, date: '', count: 0, v2: true },
-  lists: { compras: [], indicacoes: [], hobbies: [] },
+  lists: { indicacoes: [], hobbies: [] },
+  missed: [],
+  reprioDate: '',
 })
 
 export const waterGoal = (s: AppState) => Math.max(1, (s.water && s.water.goal) || 10)
@@ -29,6 +31,8 @@ export function normalize(s: AppState, now = new Date()): boolean {
   LIST_IDS.forEach((k) => {
     if (!Array.isArray(s.lists[k])) s.lists[k] = []
   })
+  if (!Array.isArray(s.missed)) s.missed = []
+  if (typeof s.reprioDate !== 'string') s.reprioDate = ''
   if (!s.water || typeof s.water !== 'object') s.water = { goal: 10, date: '', count: 0, v2: true }
   if (!s.water.v2) {
     s.water.goal = 10
@@ -92,6 +96,12 @@ export function mergeLocalInto(remote: AppState, local: AppState): AppState {
       if (!have.has(x.id)) arr.push(x)
     })
   }
+  out.missed = out.missed || []
+  const haveMissed = ids(out.missed)
+  ;(local.missed || []).forEach((x) => {
+    if (!haveMissed.has(x.id)) out.missed.push(x)
+  })
+  out.reprioDate = (local.reprioDate || '') > (out.reprioDate || '') ? local.reprioDate : out.reprioDate || ''
   out.lists = out.lists || ({} as AppState['lists'])
   LIST_IDS.forEach((k) => {
     out.lists[k] = out.lists[k] || []

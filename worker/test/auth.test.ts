@@ -105,7 +105,8 @@ describe('isolamento entre usuários', () => {
     other.areas = [{ ...other.areas[0], name: 'Área da Bia' }]
     other.tasks = []
     other.events = []
-    other.lists = { compras: [], indicacoes: [], hobbies: [] }
+    other.lists = { indicacoes: [], hobbies: [] }
+    other.missed = []
     expect((await bia.put('/api/state', other)).status).toBe(200)
 
     expect((await bia.get('/api/state')).body.areas.map((a: any) => a.name)).toEqual(['Área da Bia'])

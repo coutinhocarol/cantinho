@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { Flower, Glass, IconCheck } from '../components/icons'
-import { TaskTags } from '../components/taskParts'
-import { areaById, areaStatus, sortedAreas } from '../lib/areas'
-import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone, isLinked } from '../lib/events'
+import { LinkedTasks, TaskTags } from '../components/taskParts'
+import { acceptsTasks, areaById, areaStatus, sortedAreas } from '../lib/areas'
+import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
 import { waterCount, waterGoal } from '../lib/state'
-import type { Area, AreaStatus, Task } from '../lib/types'
-import { capitalize, rel, ymd } from '../lib/time'
+import { organizeTasks, pendingTasks } from '../lib/tasks'
+import type { Area, AreaStatus, MissedEvent, Task } from '../lib/types'
+import { capitalize, fmtDayMonth, parseYmd, rel, ymd } from '../lib/time'
 
 function Ring({ a, st }: { a: Area; st: AreaStatus }) {
   const r = 21
@@ -57,13 +58,26 @@ function StatusLine({ a, st }: { a: Area; st: AreaStatus }) {
 }
 
 function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
-  const { actions } = useApp()
+  const { actions, state, setTab, setUi } = useApp()
+  const open = state.tasks.filter((t) => !t.done && t.areaId === a.id).length
   return (
     <div className={`area-row ${st.due ? 'due' : ''}`}>
       <Ring a={a} st={st} />
       <div className="area-txt">
         <b>{a.name}</b>
         <StatusLine a={a} st={st} />
+        {acceptsTasks(a) ? (
+          <button
+            type="button"
+            className="area-todo"
+            onClick={() => {
+              setUi({ tview: 'area' })
+              setTab('quadro')
+            }}
+          >
+            {`📋 Checar suas tarefas${open ? ` (${open})` : ''}`}
+          </button>
+        ) : null}
       </div>
       <button
         className={`check-btn ${st.due ? '' : 'soft'}`}
@@ -100,6 +114,35 @@ function TaskRow({ t }: { t: Task }) {
   )
 }
 
+function MissedRow({ m }: { m: MissedEvent }) {
+  const c = useApp()
+  const tasks = c.state.tasks.filter((t) => m.taskIds.includes(t.id) && !t.done)
+  return (
+    <div className="task missed">
+      <div className="task-body">
+        <div className="task-line">
+          <span className="task-title">{m.title}</span>
+          <span className="task-tags">
+            <span className="chip rose">{`${fmtDayMonth(parseYmd(m.date))}${m.allDay ? '' : ' ' + m.start}`}</span>
+            {m.repeat !== 'none' ? <span className="chip">{REPEAT_LABEL[m.repeat]}</span> : null}
+          </span>
+        </div>
+        {tasks.length ? (
+          <span className="missed-note">{`Tarefa: ${tasks.map((t) => t.title).join(', ')}`}</span>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        className="btn danger missed-btn"
+        onClick={() => c.actions.confirmMissed(m.id)}
+        aria-label={`Confirmar exclusão de ${m.title}`}
+      >
+        Confirmar exclusão
+      </button>
+    </div>
+  )
+}
+
 function InfoButton({ text }: { text: string }) {
   const { showInfo } = useApp()
   return (
@@ -118,13 +161,13 @@ const Count = ({ n }: { n: number }) => <span className={`count${n ? '' : ' g'}`
 
 export function Inicio() {
   const c = useApp()
-  const { state, actions, openDialog } = c
+  const { state, actions, openDialog, setTab, setUi } = c
   const now = Date.now()
   const areas = sortedAreas(state).map((a) => ({ a, st: areaStatus(a, now) }))
   const due = areas.filter((x) => x.st.due).sort((x, y) => (x.st.since || 0) - (y.st.since || 0))
-  const allTasks = state.tasks.filter((t) => !t.done)
-  const pend = allTasks.filter((t) => t.quad === 'fazer' || t.quad === 'delegar')
-  const org = allTasks.filter((t) => !t.quad || (t.quad === 'agendar' && !isLinked(state, t)))
+  const pend = pendingTasks(state)
+  const org = organizeTasks(state)
+  const openCount = state.tasks.filter((t) => !t.done).length
   const byDue = (x: Task, y: Task) => (x.due || '9').localeCompare(y.due || '9')
   const orgOrdered = [
     ...sortedAreas(state).flatMap((a) => org.filter((t) => t.areaId === a.id).sort(byDue)),
@@ -136,6 +179,8 @@ export function Inicio() {
   ]
   const tk = ymd(new Date())
   const evPend = eventsOn(state, tk).filter((e) => !isEvDone(e, tk))
+  const missed = [...state.missed].sort((x, y) => x.date.localeCompare(y.date))
+  const reprioPending = openCount > 0 && state.reprioDate !== tk
   const today = new Date().toLocaleDateString('pt-BR', {
     weekday: 'long',
     day: 'numeric',
@@ -150,7 +195,7 @@ export function Inicio() {
   if (!pend.length) tasksNode = <p className="sub">Nenhuma tarefa pendente.</p>
   else {
     const aPos = Object.fromEntries(sortedAreas(state).map((a, i) => [a.id, i]))
-    const qRank = (q: Task['quad']) => (q === 'fazer' ? 0 : 1)
+    const qRank = (q: Task['quad']) => (q === 'fazer' ? 0 : q === 'delegar' ? 1 : 2)
     const ordered = [...pend].sort(
       (x, y) =>
         (x.due || '9').localeCompare(y.due || '9') ||
@@ -173,6 +218,8 @@ export function Inicio() {
     !due.length &&
     !pend.length &&
     !org.length &&
+    !missed.length &&
+    !reprioPending &&
     goal - count <= 0
 
   const areasNode = !state.areas.length ? (
@@ -228,6 +275,7 @@ export function Inicio() {
                 ) : null}
               </span>
             </div>
+            <LinkedTasks c={c} eventId={e.id} />
           </div>
         </div>
       ))}
@@ -260,6 +308,18 @@ export function Inicio() {
                   <Count n={evPend.length} />
                 </div>
                 {evNode}
+                {missed.length ? (
+                  <div className="missed-sec">
+                    <div className="sec-head">
+                      <h2>Compromissos que ficaram pra trás</h2>
+                      <Count n={missed.length} />
+                      <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário; confirme a exclusão de cada um depois de decidir o que fazer (se ainda vale, crie de novo no Calendário)." />
+                    </div>
+                    {missed.map((m) => (
+                      <MissedRow key={m.id} m={m} />
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="water-sec">
                 <div className="sec-head">
@@ -302,9 +362,47 @@ export function Inicio() {
               <div className="home-stack">
                 <div>
                   <div className="sec-head">
+                    <h2>Repriorizar tarefas</h2>
+                    <Count n={reprioPending ? 1 : 0} />
+                    <InfoButton text="Todo dia, revise a matriz de priorização: o que mudou de quadrante, o que já pode ser eliminado. Marque como feito depois de revisar; amanhã a pendência volta." />
+                  </div>
+                  {!openCount ? (
+                    <p className="sub">Nenhuma tarefa para repriorizar.</p>
+                  ) : reprioPending ? (
+                    <div className="area-row due">
+                      <div className="area-txt">
+                        <b>Revisar a matriz de priorização</b>
+                        <span className="late">Pendente hoje</span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => {
+                          setUi({ tview: 'matriz' })
+                          setTab('quadro')
+                        }}
+                      >
+                        Abrir matriz
+                      </button>
+                      <button
+                        type="button"
+                        className="check-btn"
+                        onClick={actions.doneReprio}
+                        aria-label="Marcar repriorização como feita"
+                      >
+                        <IconCheck />
+                        <span>Feito</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="sub">Tarefas repriorizadas hoje.</p>
+                  )}
+                </div>
+                <div>
+                  <div className="sec-head">
                     <h2>Tarefas pendentes</h2>
                     <Count n={pend.length} />
-                    <InfoButton text="Mostra as tarefas dos quadrantes Fazer e Simplificar. Ordem: pelo prazo e, com o mesmo prazo, Fazer vem antes de Simplificar." />
+                    <InfoButton text="Mostra as tarefas dos quadrantes Fazer e Simplificar e também qualquer tarefa com prazo vencido ou até depois de amanhã, em qualquer quadrante. Ordem: pelo prazo e, com o mesmo prazo, Fazer antes de Simplificar." />
                   </div>
                   {tasksNode}
                 </div>
@@ -312,7 +410,7 @@ export function Inicio() {
                   <div className="sec-head">
                     <h2>Tarefas a organizar</h2>
                     <Count n={org.length} />
-                    <InfoButton text="Mostra as tarefas sem classificação e as do quadrante Agendar que ainda não estão ligadas a um compromisso do calendário." />
+                    <InfoButton text="Mostra as tarefas sem classificação e as do quadrante Agendar que ainda não estão ligadas a um compromisso do calendário (as que já têm prazo próximo vão para Tarefas pendentes)." />
                   </div>
                   {org.length ? (
                     <div>

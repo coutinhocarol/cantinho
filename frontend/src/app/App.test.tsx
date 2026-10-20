@@ -540,13 +540,13 @@ describe('Coisinhas', () => {
     await goTo(user, 'Coisinhas')
     const input = document.querySelector('.list-card.active input') as HTMLInputElement
     await user.type(input, 'Leite{Enter}')
-    expect(store.getState().lists.compras.map((i) => i.title)).toEqual(['Leite'])
+    expect(store.getState().lists.indicacoes.map((i) => i.title)).toEqual(['Leite'])
     expect(input).toHaveValue('')
     await user.click(screen.getByRole('button', { name: 'Concluir' }))
-    expect(store.getState().lists.compras).toEqual([])
-    expect(screen.getByText('Item comprado')).toBeInTheDocument()
+    expect(store.getState().lists.indicacoes).toEqual([])
+    expect(screen.getByText('Indicação concluída')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Desfazer' }))
-    expect(store.getState().lists.compras).toHaveLength(1)
+    expect(store.getState().lists.indicacoes).toHaveLength(1)
   })
 
   it('troca de lista e edita uma indicação com emoji e nota', async () => {
@@ -565,7 +565,131 @@ describe('Coisinhas', () => {
     const { user, store } = setup()
     await goTo(user, 'Coisinhas')
     await user.click(screen.getAllByRole('button', { name: 'Adicionar à lista' })[0])
-    expect(store.getState().lists.compras).toEqual([])
+    expect(store.getState().lists.indicacoes).toEqual([])
+  })
+
+  it('não existe mais a lista de Compras', async () => {
+    const { user } = setup()
+    await goTo(user, 'Coisinhas')
+    expect(screen.queryByRole('button', { name: 'Compras' })).not.toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
+      'Indicações',
+      'Hobbies para testar',
+    ])
+  })
+})
+
+describe('Bora: novas pendências', () => {
+  const day = (n: number) => ymd(new Date(Date.now() + n * DAY))
+
+  it('repriorizar: aparece todo dia até marcar, e volta no dia seguinte', async () => {
+    const { user, store } = setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.tasks.push(task('t', 'Algo', 'a', { quad: 'fazer' }))
+    })
+    expect(screen.getByRole('heading', { name: 'Repriorizar tarefas' })).toBeInTheDocument()
+    expect(screen.getByText('Revisar a matriz de priorização')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Marcar repriorização como feita' }))
+    expect(store.getState().reprioDate).toBe(ymd(new Date()))
+    expect(screen.getByText('Tarefas repriorizadas hoje.')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(screen.getByText('Revisar a matriz de priorização')).toBeInTheDocument()
+  })
+
+  it('repriorizar: o atalho abre a matriz', async () => {
+    const { user } = setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.tasks.push(task('t', 'Algo', 'a', { quad: 'fazer' }))
+    })
+    await user.click(screen.getByRole('button', { name: 'Abrir matriz' }))
+    expect(document.querySelector('.mx')).toBeInTheDocument()
+  })
+
+  it('sem tarefas não há o que repriorizar', () => {
+    setup((s) => void s.areas.push(area('a', 'Quarto')))
+    expect(screen.getByText('Nenhuma tarefa para repriorizar.')).toBeInTheDocument()
+  })
+
+  it('tarefa com prazo próximo vai para Tarefas pendentes, mesmo em Eliminar', () => {
+    setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.tasks.push(
+        task('t1', 'Eliminar com prazo', 'a', { quad: 'eliminar', due: day(2) }),
+        task('t2', 'Eliminar sem prazo', 'a', { quad: 'eliminar' }),
+        task('t3', 'Sem classe e atrasada', 'a', { due: day(-3) }),
+      )
+    })
+    expect(screen.getByText('Eliminar com prazo')).toBeInTheDocument()
+    expect(screen.getByText('Sem classe e atrasada')).toBeInTheDocument()
+    expect(screen.queryByText('Eliminar sem prazo')).not.toBeInTheDocument()
+    expect(screen.getByText('Nada para organizar.')).toBeInTheDocument()
+  })
+
+  it('prazo vencido ou de hoje mostra o mesmo alerta; amanhã não', async () => {
+    const { user } = setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.tasks.push(
+        task('t1', 'Atrasada', 'a', { quad: 'fazer', due: day(-1) }),
+        task('t2', 'Hoje', 'a', { quad: 'fazer', due: day(0) }),
+        task('t3', 'Amanhã', 'a', { quad: 'fazer', due: day(1) }),
+      )
+    })
+    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
+    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+    await goTo(user, 'Tarefas')
+    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
+    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+    await user.click(screen.getByRole('button', { name: 'Matriz de priorização' }))
+    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
+    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+  })
+
+  it('compromisso de hoje mostra as tarefas ligadas', () => {
+    const tkey = ymd(new Date())
+    setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.events.push({
+        id: 'e1', title: 'Dentista', date: tkey, allDay: false, start: '15:00', end: '', repeat: 'none', notes: '', createdAt: 0, origin: tkey,
+      })
+      s.tasks.push(task('t', 'Levar exames', 'a', { quad: 'agendar', eventId: 'e1', due: tkey }))
+    })
+    expect(screen.getByText('🔗 Levar exames')).toBeInTheDocument()
+    expect(screen.getAllByText('⚠️ Vence hoje').length).toBeGreaterThan(0)
+  })
+
+  it('cada card de área a checar traz o aviso para checar as tarefas', async () => {
+    const { user } = setup((s) => {
+      s.areas.push(area('a', 'Quarto', { lastDone: null }), area('b', 'Sem tarefas', { lastDone: null, acceptsTasks: false, order: 1 }))
+      s.tasks.push(task('t', 'Algo', 'a', { quad: 'fazer' }))
+    })
+    const links = screen.getAllByRole('button', { name: /Checar suas tarefas/ })
+    expect(links).toHaveLength(1)
+    expect(links[0]).toHaveTextContent('Checar suas tarefas (1)')
+    await user.click(links[0])
+    expect(screen.getByRole('heading', { name: 'Tarefas' })).toBeInTheDocument()
+  })
+
+  it('compromissos perdidos aparecem na Bora até confirmar a exclusão', async () => {
+    const { user, store } = setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.missed.push({
+        id: 'e1:2026-01-02', eventId: 'e1', title: 'Consulta', date: '2026-01-02', allDay: true, start: '', end: '', repeat: 'none', notes: '', taskIds: [],
+      })
+    })
+    expect(screen.getByRole('heading', { name: 'Compromissos que ficaram pra trás' })).toBeInTheDocument()
+    expect(screen.getByText('Consulta')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Confirmar exclusão de Consulta' }))
+    expect(store.getState().missed).toEqual([])
+    await user.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(store.getState().missed).toHaveLength(1)
+  })
+
+  it('"Tudo certo" não aparece com pendência de repriorizar ou compromisso perdido', () => {
+    setup((s) => {
+      s.areas.push(area('a', 'Quarto'))
+      s.tasks.push(task('t', 'Algo', 'a', { quad: 'eliminar' }))
+    })
+    expect(screen.queryByText('Tudo certo por hoje')).not.toBeInTheDocument()
   })
 })
 

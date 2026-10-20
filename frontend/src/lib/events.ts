@@ -50,10 +50,34 @@ export function fmtEv(e: CalEvent): string {
 
 export const isLinked = (s: AppState, t: Task) => !!t.eventId && !!eventById(s, t.eventId)
 
-/** Remove compromissos vencidos e avança a próxima data dos que se repetem. */
+/**
+ * Recolhe compromissos cujo dia passou sem serem marcados como feitos: o único sai da agenda, o que
+ * se repete avança para a próxima ocorrência. Nada some em silêncio: cada dia perdido vira um item
+ * em `s.missed`, que fica na Bora até a exclusão ser confirmada.
+ */
 export function pruneEvents(s: AppState, now = new Date()): boolean {
   const tk = ymd(now)
   let ch = false
+  if (!Array.isArray(s.missed)) s.missed = []
+  const seen = new Set(s.missed.map((m) => m.id))
+  const miss = (e: CalEvent, date: string) => {
+    const id = `${e.id}:${date}`
+    if (seen.has(id)) return
+    seen.add(id)
+    s.missed.push({
+      id,
+      eventId: e.id,
+      title: e.title,
+      date,
+      allDay: !!e.allDay,
+      start: e.start || '',
+      end: e.end || '',
+      repeat: e.repeat || 'none',
+      notes: e.notes || '',
+      taskIds: (s.tasks || []).filter((t) => t.eventId === e.id).map((t) => t.id),
+    })
+    ch = true
+  }
   s.events = s.events.filter((e) => {
     if (!e.date) {
       ch = true
@@ -62,12 +86,19 @@ export function pruneEvents(s: AppState, now = new Date()): boolean {
     if (!e.origin) e.origin = e.date
     if (!e.repeat || e.repeat === 'none') {
       if (e.date < tk) {
+        miss(e, e.date)
         ch = true
         return false
       }
       return true
     }
     if (e.date < tk) {
+      const first = parseYmd(e.date)
+      for (let i = 0; i <= 400; i++) {
+        const k = ymd(new Date(first.getFullYear(), first.getMonth(), first.getDate() + i, 12))
+        if (k >= tk) break
+        if (occursOn(e, k) && !isEvDone(e, k)) miss(e, k)
+      }
       for (let i = 0; i <= 400; i++) {
         const k = ymd(new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12))
         if (occursOn(e, k)) {
