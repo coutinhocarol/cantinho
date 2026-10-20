@@ -75,7 +75,7 @@ function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
               setTab('quadro')
             }}
           >
-            {`📋 Checar suas tarefas${open ? ` (${open})` : ''}`}
+            {`Checar suas tarefas${open ? ` (${open})` : ''}`}
           </button>
         ) : null}
       </div>
