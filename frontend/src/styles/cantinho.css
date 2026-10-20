@@ -401,7 +401,7 @@ textarea.field{min-height:72px;resize:vertical}
 .lists-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 .list-card{display:none;border:1px solid var(--line);border-radius:24px;padding:16px 18px;background:var(--soft)}
 .list-card.active{display:block}
-@media (min-width:960px){.lists-grid{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start}.list-card{display:block}.list-seg{display:none}}
+@media (min-width:960px){.lists-grid{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}.list-card{display:block}.list-seg{display:none}}
 .li-add{display:flex;gap:8px;margin:4px 0 8px}
 .li-add input.field{flex:1 1 0;width:auto;min-width:0}
 .li-add select.field{width:auto;max-width:128px;flex:none}
@@ -531,3 +531,12 @@ textarea.field{min-height:72px;resize:vertical}
 .task.missed .task-title{cursor:default;text-align:left}
 .missed-note{display:block;margin-top:4px;font-size:13px;color:var(--muted);overflow-wrap:anywhere}
 .missed-btn{flex:none}
+
+/* seção de compromissos perdidos: largura toda e em colunas quando há espaço */
+.home-grid .missed-sec{grid-column:1/-1;margin-top:0}
+.missed-list{display:grid;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.missed-list{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:44px}}
+/* linha de repriorizar: o título quebra em vez de cortar e os botões descem no celular */
+.area-row.reprio{flex-wrap:wrap}
+.area-row.reprio .area-txt{flex:1 1 200px}
+.area-row.reprio .area-txt b{white-space:normal}

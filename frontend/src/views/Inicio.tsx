@@ -308,18 +308,6 @@ export function Inicio() {
                   <Count n={evPend.length} />
                 </div>
                 {evNode}
-                {missed.length ? (
-                  <div className="missed-sec">
-                    <div className="sec-head">
-                      <h2>Compromissos que ficaram pra trás</h2>
-                      <Count n={missed.length} />
-                      <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário; confirme a exclusão de cada um depois de decidir o que fazer (se ainda vale, crie de novo no Calendário)." />
-                    </div>
-                    {missed.map((m) => (
-                      <MissedRow key={m.id} m={m} />
-                    ))}
-                  </div>
-                ) : null}
               </div>
               <div className="water-sec">
                 <div className="sec-head">
@@ -352,6 +340,20 @@ export function Inicio() {
                   </div>
                 </div>
               </div>
+              {missed.length ? (
+                <div className="missed-sec">
+                  <div className="sec-head">
+                    <h2>Compromissos que ficaram pra trás</h2>
+                    <Count n={missed.length} />
+                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário; confirme a exclusão de cada um depois de decidir o que fazer (se ainda vale, crie de novo no Calendário)." />
+                  </div>
+                  <div className="missed-list">
+                    {missed.map((m) => (
+                      <MissedRow key={m.id} m={m} />
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div>
                 <div className="sec-head">
                   <h2>Áreas a checar</h2>
@@ -369,7 +371,7 @@ export function Inicio() {
                   {!openCount ? (
                     <p className="sub">Nenhuma tarefa para repriorizar.</p>
                   ) : reprioPending ? (
-                    <div className="area-row due">
+                    <div className="area-row due reprio">
                       <div className="area-txt">
                         <b>Revisar a matriz de priorização</b>
                         <span className="late">Pendente hoje</span>
