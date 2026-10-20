@@ -1,134 +1,110 @@
 ﻿# Cantinho
 
-Organizador de rotina: **Bora** (o que fazer hoje), **Tarefas** (por área e matriz de priorização),
-**Calendário**, **Coisinhas** (listas) e **Áreas** (rotinas com periodicidade).
+**Um organizador pessoal que responde a uma pergunta só: "o que eu preciso fazer agora?"**
 
-**Site no ar:** https://cantinho.coutinhoucarol.workers.dev — é só clicar em **Criar conta** e, dentro do app, em **Usar exemplos** para vê-lo preenchido.
+Cantinho junta num lugar tudo que pede atenção na vida de uma pessoa (casa, finanças, estudos,
+saúde, compromissos) e, todo dia, mostra apenas o que exige ação. Projeto completo, do banco de
+dados à interface, feito para uso real.
 
-| Camada    | Tecnologia                                                       |
-| --------- | ---------------------------------------------------------------- |
-| Front-end | React 19 + Vite + TypeScript, Tailwind CSS 4                     |
-| API       | Cloudflare Worker (Hono + TypeScript), no mesmo endereço do site |
-| Banco     | PostgreSQL no Supabase, acessado pelo Hyperdrive da Cloudflare   |
-| Testes    | Vitest + Testing Library (front), Vitest contra o Postgres (API) |
+**[Abrir o site](https://cantinho.coutinhoucarol.workers.dev)** · clique em **Criar conta** e, dentro do app, em **Usar exemplos** para vê-lo preenchido.
+
+![Aba Bora no computador](docs/img/bora-desktop.png)
+
+## A ideia
+
+Ferramentas de organização costumam virar um depósito: anotações, listas e lembretes que ninguém
+revisita. O Cantinho parte do contrário:
+
+> **Nada no sistema pode existir solto.** Tudo que é cadastrado precisa ser conferido de tempos em
+> tempos e levar a uma ação. Para isso existe a aba **Bora**.
+
+A Bora é a tela do dia. Ela reúne, num só lugar, o que venceu, o que acontece hoje e o que ficou
+pendente. Se a Bora está vazia, a pessoa pode ficar tranquila de que não esqueceu nada. Essa
+promessa guiou todas as decisões do produto.
+
+## Como funciona
+
+| Aba | Para que serve |
+| --- | --- |
+| **Bora** | A tela do dia: compromissos de hoje, água, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado. |
+| **Tarefas** | Por área da vida ou na **matriz de priorização** (Fazer, Agendar, Simplificar, Eliminar), com arrastar e soltar. |
+| **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso. |
+| **Áreas** | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Quando o prazo vence, a área aparece na Bora para ser checada. |
+| **Coisinhas** | Listas leves: indicações (filmes, séries, livros) e hobbies para testar. |
+
+<p>
+  <img src="docs/img/bora-celular-escuro.png" alt="Bora no celular, modo escuro" width="300">
+  &nbsp;&nbsp;
+  <img src="docs/img/matriz-tablet.png" alt="Matriz de priorização no tablet" width="520">
+</p>
+
+## Decisões de produto que sustentam a promessa
+
+Antes de mexer no código, mapeei o sistema inteiro para achar tudo que podia ficar "solto" (fora da
+Bora). Cada lacuna virou uma regra:
+
+- **Prazo vencido não passa despercebido.** Tarefa atrasada ou com prazo hoje ganha o mesmo alerta
+  em todas as telas. Tarefa com prazo até depois de amanhã sobe para as pendentes, em qualquer
+  quadrante.
+- **Nada some em silêncio.** Um compromisso que passou sem ser marcado como feito não é apagado:
+  fica na Bora até a pessoa confirmar a exclusão. Vale também para cada dia perdido de um
+  compromisso que se repete.
+- **Revisão diária obrigatória.** Repriorizar as tarefas na matriz é uma pendência que volta todo
+  dia na Bora.
+- **A mensagem "Tudo certo por hoje" é honesta.** Só aparece quando compromissos, áreas, tarefas,
+  revisões e água estão em dia.
+- **O que está pendente continua pendente.** A Bora é calculada a partir da data de hoje: ficar
+  dias sem abrir o app não perde nada, e a área mostra "pendente há 6 dias".
+- **Consistência de interface.** Revisei botões e textos para que a mesma ação tenha o mesmo nome e o
+  mesmo visual em todo o app, e removi informações que nenhuma tela usava.
+
+## Como foi construído
+
+| Camada | Tecnologia |
+| --- | --- |
+| Interface | React 19, TypeScript, Vite, Tailwind CSS 4 |
+| API | Cloudflare Worker (Hono + TypeScript), no mesmo endereço do site |
+| Banco | PostgreSQL (Supabase), via Hyperdrive da Cloudflare |
+| Testes | Vitest e Testing Library (interface), Vitest contra um Postgres real (API) |
+
+Pontos que valem destaque:
+
+- **Funciona mesmo com o servidor fora do ar.** Os dados são gravados no aparelho na hora e
+  sincronizados com a conta em seguida; se a API falha, o app segue funcionando e avisa o motivo.
+  Limites dos planos gratuitos (cota, banco pausado, teto de contas) têm mensagens claras em vez de
+  tela em branco.
+- **Segurança.** Senha com PBKDF2-SHA256 e sal; sessão em cookie `httpOnly`; cada linha do banco
+  pertence a um usuário; Row Level Security ligado para a API pública do banco não enxergar nada.
+- **Testes de verdade.** Cerca de 160 testes automáticos. Os da API rodam num schema temporário do
+  Postgres real, sem tocar nos dados.
+- **Responsivo e acessível.** Usado em celular, tablet e computador, com modo claro e escuro (conferi
+  as telas nos três tamanhos e nos dois modos). Botões com nomes para leitores de tela, caixas de
+  diálogo nativas e reordenação de áreas também pelo teclado.
+- **Instalável no celular.** Ícone próprio e manifesto para adicionar à tela inicial.
+- **Banco versionado.** Mudanças no banco por migrações SQL numeradas.
+
+## O que este projeto demonstra
+
+- **Visão de produto:** partir de um problema real, definir um princípio claro ("nada solto") e
+  traduzi-lo em regras testáveis.
+- **Desenvolvimento ponta a ponta:** modelagem de dados, API, autenticação, interface e publicação.
+- **Atenção à qualidade:** testes automatizados, auditoria de consistência da interface e revisão
+  visual em vários tamanhos de tela.
+
+## Rodar no seu computador
+
+Instruções de instalação, testes, publicação e o modelo de dados estão em
+[docs/DESENVOLVIMENTO.md](docs/DESENVOLVIMENTO.md).
 
 ```
 cantinho/
-├── .env              # DATABASE_URL e JWT_SECRET (não vai para o git; modelo em .env.example)
-├── .env.example      # modelo do .env
-├── dev.ps1           # abre o Worker e o Vite juntos para desenvolver
-├── frontend/         # React + Vite  → compila para frontend/dist
-└── worker/           # Cloudflare Worker: serve frontend/dist e a API em /api/*
-    ├── src/          # rotas, login, repositório (SQL), validação
-    ├── migrations/   # SQL do banco
-    ├── scripts/      # db:migrate (aplica as migrations) e dev-vars (prepara o .dev.vars local)
-    ├── test/
-    └── wrangler.jsonc  # configuração do Worker (Hyperdrive, variáveis, site estático)
+├── frontend/   # interface em React
+├── worker/     # API (Cloudflare Worker), migrações do banco e testes
+└── docs/       # guia de desenvolvimento e imagens
 ```
 
-## Primeira vez
+## Próximos passos
 
-1. Copie `.env.example` para **`.env`** na raiz e preencha `DATABASE_URL` (a string de conexão do
-   Supabase, com a senha real) e `JWT_SECRET` (gere com
-   `node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"`).
-   Se a senha tiver `@ : / # ? %`, codifique-os (`@` → `%40`).
-2. `cd frontend && npm install` e `cd ../worker && npm install` (Node 20+).
-3. Crie as tabelas no Supabase: `cd worker && npm run db:migrate` (só aplica o que falta).
-
-## Rodar em desenvolvimento
-
-```powershell
-.\dev.ps1     # abre os dois e o site fica em http://localhost:5173
-```
-
-Ou à mão, em dois terminais: `cd worker; npm run dev` (API em :8787) e `cd frontend; npm run dev`
-(site em :5173, que encaminha `/api` para o Worker). O Worker local conecta direto no Supabase.
-
-## Testes e verificações
-
-```powershell
-cd frontend; npm test; npm run typecheck; npm run lint; npm run build
-cd worker;   npm test; npm run typecheck
-```
-
-Os testes da API rodam no Postgres do Supabase, cada arquivo num schema temporário apagado no fim;
-as tabelas reais (`public`) não são tocadas.
-
-## Publicar na Cloudflare
-
-Tudo sai de um único Worker (site + API), então o cookie de login funciona sem configuração extra.
-
-```powershell
-cd worker
-npx wrangler login                                   # abre o navegador para autorizar
-# 1) pool de conexões com o Supabase:
-npx wrangler hyperdrive create cantinho-db --connection-string="postgresql://postgres.<ref>:<senha>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres"
-#    copie o "id" mostrado e coloque em worker/wrangler.jsonc (hyperdrive → id)
-# 2) a chave da sessão (cole o JWT_SECRET do .env quando pedir):
-npx wrangler secret put JWT_SECRET
-# 3) compila o site e publica:
-npm run deploy
-```
-
-O endereço final aparece no fim (`https://cantinho.<sua-conta>.workers.dev`). O cadastro fica aberto
-(`ALLOW_REGISTRATION`) até um teto de contas (`MAX_USERS`, padrão 1000), para não encher o banco
-gratuito. Para fechá-lo, ponha `"ALLOW_REGISTRATION": "false"` em `vars` no `wrangler.jsonc`.
-
-**Publicação automática:** com o repositório conectado em Workers & Pages → Settings → Builds
-(build `npm --prefix frontend ci && npm --prefix frontend run build && npm --prefix worker ci`, deploy
-`npx wrangler deploy --config worker/wrangler.jsonc`), cada `git push` na `main` publica o site.
-
-## Limites dos planos gratuitos
-
-O site roda nos planos gratuitos da Cloudflare e do Supabase. Quando um limite estoura, o app não
-fica em branco: mostra o motivo e continua funcionando com os dados salvos no aparelho.
-
-| Situação                                                                                                                  | O que acontece                                               | Mensagem                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| Cota diária de requisições (100 mil/dia) ou CPU do Worker excedidos (erros 1027/1102 da Cloudflare, HTTP 429/5xx em HTML) | O site (arquivos estáticos) continua abrindo; só a API falha | "O servidor atingiu o limite de uso do plano gratuito da Cloudflare… reinicia por volta das 21h (Brasília)" |
-| Banco do Supabase pausado por inatividade, sem conexões ou fora do ar                                                     | API responde `503` com `code: db_unavailable`                | "O banco de dados está indisponível… pode estar pausado por inatividade"                                    |
-| Teto de contas atingido                                                                                                   | `403` com `code: users_limit`                                | "O limite de contas deste site foi atingido"                                                                |
-| Sem internet                                                                                                              | —                                                            | "Sem conexão com o servidor"                                                                                |
-
-No login o erro aparece sob o formulário; dentro do app, como um aviso fixo no topo (e um balão) que
-some sozinho quando a conexão volta. O app tenta salvar de novo com espera crescente (até ~1 min)
-para não martelar um servidor sem cota. Um banco pausado do Supabase volta pelo painel do Supabase
-(botão _Restore_).
-
-O hash da senha (PBKDF2, 100 mil iterações, ~20 ms) cabe na cota de CPU do plano gratuito nos
-testes feitos. Se um dia aparecer o erro 1102 ao entrar, as saídas são o plano Workers Paid
-(US$ 5/mês) ou trocar o login para o Supabase Auth.
-
-## Como os dados são salvos
-
-Tabelas relacionais no PostgreSQL:
-
-| Tabela             | Conteúdo                                                                                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `users`            | contas (e-mail em minúsculas, senha com hash PBKDF2-SHA256 e sal)                                                                                    |
-| `areas`            | nome, emoji, periodicidade (`interval_days` ou `weekly_days` + `weekly_time`), última checagem, ordem                                                |
-| `area_checks`      | histórico de checagens (FK → `areas`, cascade)                                                                                                       |
-| `tasks`            | título, quadrante, prazo, notas. FK → `areas` e → `events` com `ON DELETE SET NULL`: **apagar uma área não apaga as tarefas, elas ficam "sem área"** |
-| `events`           | compromissos (data, horário, dia inteiro, repetição)                                                                                                 |
-| `event_done_dates` | dias concluídos de compromissos que se repetem (FK → `events`)                                                                                       |
-| `list_items`       | Compras, Indicações e Hobbies                                                                                                                        |
-| `water`            | meta e contagem de copos do dia (uma linha por usuário)                                                                                              |
-
-Toda linha pertence a um usuário (`user_id`, chave primária composta `user_id + id`): cada conta só
-vê os próprios dados. Há `CHECK`s e chaves estrangeiras para os valores válidos, e **Row Level
-Security ligado e sem policies**: a API REST pública do Supabase (anon key) não enxerga nada.
-
-A API (`GET/PUT /api/state`) recebe e devolve o estado do app como um todo; o Worker o decompõe em
-linhas numa transação (cria, atualiza e remove o que mudou). A interface grava no aparelho
-(`localStorage`) na hora e envia ao servidor ~0,5 s depois; na primeira conexão de um aparelho com
-dados locais, o que existe só nele é juntado ao que já está na conta. Se a API estiver fora do ar,
-o app continua funcionando e avisa uma vez que os dados ficam só neste aparelho.
-
-## Login
-
-- Criar conta e entrar com e-mail e senha (mínimo 8 caracteres); botão **Sair** no topo.
-- A sessão é um JWT num cookie `httpOnly` + `SameSite=Lax` (30 dias; muda com `SESSION_DAYS`),
-  assinado com `JWT_SECRET`.
-  O JavaScript da página nunca enxerga o token. Trocar o `JWT_SECRET` desloga todo mundo.
-- O erro de login é o mesmo para e-mail inexistente e senha errada.
-- Ao sair, a cópia local dos dados daquela conta é apagada do navegador.
+- Notificações no celular. Hoje a Bora só mostra o que está pendente quando o app é aberto.
+- Mostrar na Bora os compromissos dos próximos dias, não só os de hoje.
+- Histórico do que foi concluído.
