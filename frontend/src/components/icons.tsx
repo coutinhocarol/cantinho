@@ -94,3 +94,25 @@ export const TAB_ICONS: Record<string, React.ReactNode> = {
     </svg>
   ),
 }
+
+export const IconAlert = () => (
+  <svg {...base} strokeWidth="2.2" aria-hidden="true">
+    <path d="M12 4.5l9 15.5H3z" />
+    <path d="M12 10v4M12 17v.2" />
+  </svg>
+)
+export const IconHourglass = () => (
+  <svg {...base} strokeWidth="2" aria-hidden="true">
+    <path d="M7 3.5h10M7 20.5h10M8 3.5c0 4.5 4 5.5 4 8.5s-4 4-4 8.5M16 3.5c0 4.5-4 5.5-4 8.5s4 4 4 8.5" />
+  </svg>
+)
+export const IconLink = () => (
+  <svg {...base} strokeWidth="2.2" aria-hidden="true">
+    <path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" />
+  </svg>
+)
+export const IconNote = () => (
+  <svg {...base} strokeWidth="2" aria-hidden="true">
+    <path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 17h7" />
+  </svg>
+)

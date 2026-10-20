@@ -60,7 +60,7 @@ function QCard({
         <div className="task-body">
           <button
             className="task-title"
-            onClick={() => c.openDialog({ kind: 'move', taskId: t.id })}
+            onClick={() => c.openDialog({ kind: 'task', id: t.id })}
           >
             {t.title}
           </button>
@@ -76,9 +76,7 @@ function Matriz() {
   const { state, commit, openDialog } = c
   const [drag, setDrag] = useState<Drag>(null)
   const [over, setOver] = useState<string | null>(null)
-  const all = state.tasks
-    .filter((t) => !t.done)
-    .sort((x, y) => (x.createdAt || 0) - (y.createdAt || 0))
+  const all = [...state.tasks].sort((x, y) => (x.createdAt || 0) - (y.createdAt || 0))
   const free = all.filter((t) => !t.quad)
 
   const zoneProps = (zone: string) => ({
@@ -133,13 +131,17 @@ function Matriz() {
             ))}
           </div>
         ) : (
-          <p className="q-empty">Arraste ou toque em uma tarefa para colocar aqui.</p>
+          <p className="q-empty">Nenhuma tarefa</p>
         )}
       </div>
     )
   }
 
   return (
+    <>
+      <p className="sub tw:mt-0 tw:mb-[14px] tw:text-[14px]">
+        Arraste uma tarefa para o quadrante desejado, ou mude o quadrante ao editar a tarefa.
+      </p>
     <div className="mwrap">
       <aside
         className={`tray${over === '' ? ' drop' : ''}`}
@@ -174,6 +176,7 @@ function Matriz() {
         {quad(QUADS[3])}
       </div>
     </div>
+    </>
   )
 }
 
@@ -189,7 +192,7 @@ function Board() {
     setOverCol(null)
   }
   // tarefas cuja área foi excluída continuam existindo, numa coluna "Sem área"
-  const orphan = state.tasks.some((t) => !t.done && !areaById(state, t.areaId))
+  const orphan = state.tasks.some((t) => !areaById(state, t.areaId))
   const cols = [
     ...areas.map((a) => ({ id: a.id, name: a.name, emoji: a.emoji || '', st: areaStatus(a, now) })),
     ...(orphan ? [{ id: '', name: 'Sem área', emoji: '', st: null }] : []),
@@ -199,7 +202,7 @@ function Board() {
   return (
     <div className="board">
       {cols.map((col) => {
-        const open = state.tasks.filter((t) => !t.done && inCol(t, col.id)).sort(colSort)
+        const open = state.tasks.filter((t) => inCol(t, col.id)).sort(colSort)
         return (
           <div
             key={col.id || 'sem-area'}
@@ -291,7 +294,7 @@ function Board() {
 export function Quadro() {
   const { state, ui, setUi, setTab, openDialog } = useApp()
   const areas = taskAreas(state)
-  const hasOrphans = state.tasks.some((t) => !t.done && !areaById(state, t.areaId))
+  const hasOrphans = state.tasks.some((t) => !areaById(state, t.areaId))
   const mat = ui.tview === 'matriz'
   const setView = (v: 'area' | 'matriz') => {
     setUi({ tview: v })

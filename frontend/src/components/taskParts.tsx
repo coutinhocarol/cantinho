@@ -5,6 +5,7 @@ import { eventById } from '../lib/events'
 import { dueStatus } from '../lib/tasks'
 import type { Task } from '../lib/types'
 import { fmtDayMonth, parseYmd } from '../lib/time'
+import { IconAlert, IconHourglass, IconLink, IconNote } from './icons'
 
 type Ctx = Pick<AppCtx, 'state' | 'openDialog'>
 
@@ -36,7 +37,8 @@ export function linkChip(c: Ctx, t: Task): ReactNode | null {
         title={`Compromisso: ${e.title}. Toque para trocar.`}
         onClick={() => c.openDialog({ kind: 'schedule', taskId: t.id })}
       >
-        {`🔗 ${fmtDayMonth(parseYmd(e.date))}${e.allDay ? '' : ' ' + e.start}`}
+        <IconLink />
+        {`${fmtDayMonth(parseYmd(e.date))}${e.allDay ? '' : ' ' + e.start}`}
       </button>
     )
   }
@@ -53,38 +55,52 @@ export function linkChip(c: Ctx, t: Task): ReactNode | null {
   )
 }
 
-/**
- * Prazo da tarefa. Vencido ou de hoje vira o alerta ⚠️ (o mesmo em qualquer tela onde a tarefa
- * aparece); amanhã e depois de amanhã mantêm a etiqueta comum.
- */
-export function dueAlertLabel(t: Task): string | null {
+/** Texto do alerta de prazo: só para prazo vencido ou de hoje. */
+export function dueAlertText(t: Pick<Task, 'due'>): string | null {
   const st = dueStatus(t)
-  if (st === 'late') return `⚠️ Atrasada · ${fmtDayMonth(parseYmd(t.due))}`
-  if (st === 'today') return '⚠️ Vence hoje'
+  if (st === 'late') return `Atrasada · ${fmtDayMonth(parseYmd(t.due))}`
+  if (st === 'today') return 'Vence hoje'
   return null
 }
 
+/** Alerta de prazo em texto corrido (sem chip), para linhas dentro de botões. */
+export function DueAlertInline({ t }: { t: Pick<Task, 'due'> }) {
+  const text = dueAlertText(t)
+  return text ? (
+    <b className="alert-inline">
+      <IconAlert />
+      {text}
+    </b>
+  ) : null
+}
+
+/**
+ * Prazo da tarefa. Vencido ou de hoje vira o alerta (o mesmo em qualquer tela onde a tarefa
+ * aparece); amanhã e depois de amanhã mantêm a etiqueta comum.
+ */
 export function dueTag(t: Task): ReactNode | null {
   if (!t.due) return null
   const txt = fmtDayMonth(parseYmd(t.due))
-  const alert = dueAlertLabel(t)
+  const alert = dueAlertText(t)
   if (alert)
     return (
       <span className="chip alert" title={dueStatus(t) === 'late' ? `Atrasada, prazo ${txt}` : 'Prazo hoje'}>
+        <IconAlert />
         {alert}
       </span>
     )
   return (
     <span className="chip" title={`Prazo ${txt}`}>
-      {`⏳ ${txt}`}
+      <IconHourglass />
+      {txt}
     </span>
   )
 }
 
 export const notesTag = (t: Task): ReactNode | null =>
   t.notes ? (
-    <span className="chip" title="Tem nota">
-      📝
+    <span className="chip" title="Tem nota" aria-label="Tem nota">
+      <IconNote />
     </span>
   ) : null
 
@@ -101,7 +117,7 @@ export function TaskTags({ c, t, noQuad }: { c: Ctx; t: Task; noQuad?: boolean }
 
 /** Tarefas ligadas a um compromisso, com o mesmo alerta de prazo das demais telas. */
 export function LinkedTasks({ c, eventId }: { c: Ctx; eventId: string }) {
-  const tasks = c.state.tasks.filter((t) => t.eventId === eventId && !t.done)
+  const tasks = c.state.tasks.filter((t) => t.eventId === eventId)
   if (!tasks.length) return null
   return (
     <span className="linked-tasks">
@@ -112,7 +128,8 @@ export function LinkedTasks({ c, eventId }: { c: Ctx; eventId: string }) {
             className="linked-title"
             onClick={() => c.openDialog({ kind: 'task', id: t.id })}
           >
-            {`🔗 ${t.title}`}
+            <IconLink />
+            {t.title}
           </button>
           {dueTag(t)}
         </span>

@@ -261,7 +261,7 @@ export function ScheduleDialog({ taskId }: { taskId: string }) {
         {cur ? (
           <button
             type="button"
-            className="btn danger"
+            className="btn"
             data-dact="unlink"
             onClick={() => {
               commit((d) => {
@@ -270,12 +270,12 @@ export function ScheduleDialog({ taskId }: { taskId: string }) {
               closeDialog()
             }}
           >
-            Desfazer ligação
+            Desvincular
           </button>
         ) : null}
         <span className="spacer"></span>
         <button type="button" className="btn ghost" data-dact="cancel" onClick={closeDialog}>
-          Agora não
+          Cancelar
         </button>
       </div>
     </div>
@@ -334,8 +334,8 @@ export function MoveDialog({ taskId }: { taskId: string }) {
         >
           Editar tarefa
         </button>
-        <button type="button" className="btn" data-dact="cancel" onClick={closeDialog}>
-          Fechar
+        <button type="button" className="btn ghost" data-dact="cancel" onClick={closeDialog}>
+          Cancelar
         </button>
       </div>
     </div>

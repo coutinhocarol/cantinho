@@ -44,7 +44,7 @@ function occurrences(p: Period, now: number): number[] {
 export function areaStatus(a: Area, now = Date.now()): AreaStatus {
   const p = a.period
   if (a.forceDue) return { due: true, progress: 1, since: a.forceDue, forced: true }
-  const last = Math.max(a.lastDone || 0, a.okAt || 0) || null
+  const last = a.lastDone || null
   if (p.type === 'interval') {
     const ms = DAY * Math.max(1, p.every || 1)
     if (!last) return { due: true, progress: 1, never: true }

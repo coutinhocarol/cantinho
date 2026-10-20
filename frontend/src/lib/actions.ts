@@ -39,7 +39,7 @@ export function createActions(store: Store, toast: ToastFn): Actions {
       commit((d) => {
         const x = areaById(d, id)!
         x.lastDone = now
-        x.history = [now, ...(x.history || [])].slice(0, 30)
+        x.history = [now, ...(x.history || [])].slice(0, 5)
         delete x.forceDue
       })
       const hhmm = new Date(now).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
@@ -181,7 +181,7 @@ export function createActions(store: Store, toast: ToastFn): Actions {
       commit((d) => {
         d.reprioDate = ymd(new Date())
       })
-      toast('Tarefas repriorizadas por hoje', () =>
+      toast('Repriorização checada', () =>
         commit((d) => {
           d.reprioDate = prev
         }),
@@ -255,14 +255,12 @@ export function createActions(store: Store, toast: ToastFn): Actions {
         const mk = (
           name: string,
           emoji: string,
-          color: string,
           period: Area['period'],
           lastDone: number | null,
         ): Area => ({
           id: uid(),
           name,
           emoji,
-          color,
           period,
           lastDone,
           history: lastDone ? [lastDone] : [],
@@ -270,10 +268,10 @@ export function createActions(store: Store, toast: ToastFn): Actions {
           order: s.areas.length,
         })
         const ex = [
-          mk('Quarto', '🛏️', 'rose', { type: 'interval', every: 7, unit: 'days' }, now - 8 * DAY),
-          mk('Plantas', '🪴', 'green', { type: 'weekly', days: [2], time: '21:00' }, null),
-          mk('Cozinha', '🍳', 'green', { type: 'interval', every: 2, unit: 'days' }, now - DAY),
-          mk('Finanças', '🧾', 'rose', { type: 'interval', every: 30, unit: 'days' }, now - 12 * DAY),
+          mk('Quarto', '🛏️', { type: 'interval', every: 7, unit: 'days' }, now - 8 * DAY),
+          mk('Plantas', '🪴', { type: 'weekly', days: [2], time: '21:00' }, null),
+          mk('Cozinha', '🍳', { type: 'interval', every: 2, unit: 'days' }, now - DAY),
+          mk('Finanças', '🧾', { type: 'interval', every: 30, unit: 'days' }, now - 12 * DAY),
         ]
         ex.forEach((a, i) => {
           a.order = s.areas.length + i
@@ -282,7 +280,7 @@ export function createActions(store: Store, toast: ToastFn): Actions {
         const q = ex[0].id
         const c = ex[2].id
         const f = ex[3].id
-        const base = { notes: '', due: '', done: false, doneAt: null, createdAt: now }
+        const base = { notes: '', due: '', createdAt: now }
         s.tasks.push(
           { id: uid(), title: 'Trocar a roupa de cama', quad: 'fazer', areaId: q, ...base },
           { id: uid(), title: 'Organizar o guarda-roupa', quad: 'agendar', areaId: q, ...base },

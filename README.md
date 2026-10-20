@@ -1,9 +1,9 @@
-# Cantinho
+﻿# Cantinho
 
 Organizador de rotina: **Bora** (o que fazer hoje), **Tarefas** (por área e matriz de priorização),
 **Calendário**, **Coisinhas** (listas) e **Áreas** (rotinas com periodicidade).
 
-**Site no ar:** https://cantinho.coutinhoucarol.workers.dev — é só clicar em **Criar conta** (vale qualquer e-mail) e, dentro do app, em **Usar exemplos** para vê-lo preenchido.
+**Site no ar:** https://cantinho.coutinhoucarol.workers.dev — é só clicar em **Criar conta** e, dentro do app, em **Usar exemplos** para vê-lo preenchido.
 
 | Camada    | Tecnologia                                                       |
 | --------- | ---------------------------------------------------------------- |

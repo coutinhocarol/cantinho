@@ -26,13 +26,13 @@ export const LISTS: ListDef[] = [
     tab: 'Hobbies',
     ph: 'Adicionar item…',
     empty: 'Nenhum hobby na lista ainda.',
-    done: 'Hobby marcado como experimentado',
+    done: 'Hobby concluído',
   },
 ]
 
-export const KINDS: Record<KindId, { label: string; emoji: string; done?: string }> = {
-  filme: { label: 'Filme', emoji: '🎬', done: 'Marcado como visto' },
-  serie: { label: 'Série', emoji: '📺', done: 'Marcado como visto' },
-  livro: { label: 'Livro', emoji: '📖', done: 'Marcado como lido' },
+export const KINDS: Record<KindId, { label: string; emoji: string }> = {
+  filme: { label: 'Filme', emoji: '🎬' },
+  serie: { label: 'Série', emoji: '📺' },
+  livro: { label: 'Livro', emoji: '📖' },
   outro: { label: 'Outro', emoji: '✨' },
 }

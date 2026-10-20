@@ -41,7 +41,7 @@ describe('/api/state', () => {
     const [a1, a2] = saved.areas
     expect(a1.period).toEqual({ type: 'interval', every: 7, unit: 'days' })
     expect(a1.history).toEqual([1729300000000, 1729200000000]) // mais recente primeiro
-    expect([a1.lastDone, a1.forceDue, a1.color, a1.emoji]).toEqual([1729300000000, 1729300001234, 'rose', '🛏️'])
+    expect([a1.lastDone, a1.forceDue, a1.emoji]).toEqual([1729300000000, 1729300001234, '🛏️'])
     expect(a2.period).toEqual({ type: 'weekly', days: [2, 5], time: '21:00' })
     expect([a2.lastDone, a2.acceptsTasks]).toEqual([null, false])
     expect(saved.areas.map((a: any) => a.order)).toEqual([0, 1])

@@ -50,7 +50,7 @@ export function TaskDialog({ id, areaId }: { id: string | null; areaId?: string 
         t = d.tasks.find((x) => x.id === src.id)!
         Object.assign(t, vals)
       } else {
-        t = { id: taskId, ...vals, done: false, doneAt: null, createdAt: Date.now() }
+        t = { id: taskId, ...vals, createdAt: Date.now() }
         d.tasks.push(t)
       }
       if (ev !== '__new') {

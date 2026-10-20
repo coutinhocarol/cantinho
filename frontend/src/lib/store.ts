@@ -91,7 +91,6 @@ export class Store {
   commit = (mutate?: (draft: AppState) => void) => {
     const next = structuredClone(this.state)
     mutate?.(next)
-    next.tasks = next.tasks.filter((t) => !t.done)
     this.state = next
     this.saveLocal()
     this.emit()
@@ -114,7 +113,6 @@ export class Store {
       if (!raw) return
       const s = JSON.parse(raw) as AppState
       if (s && Array.isArray(s.areas)) {
-        s.tasks = (s.tasks || []).filter((t) => !t.done)
         this.state = s
         if (normalize(this.state)) this.saveLocal()
       }
@@ -212,7 +210,7 @@ export class Store {
     this.state = JSON.parse(JSON.stringify(remote))
     this.lastSent = body
     const nch = normalize(this.state)
-    if (this.state.tasks.some((t) => t.done) || nch) {
+    if (nch) {
       this.commit()
       return
     }

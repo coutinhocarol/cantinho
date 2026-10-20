@@ -53,7 +53,7 @@ export function AreaDialog({ id }: { id: string | null }) {
       return
     }
     if (src && !acc) {
-      const n = state.tasks.filter((t) => t.areaId === src.id && !t.done).length
+      const n = state.tasks.filter((t) => t.areaId === src.id).length
       if (n) {
         setErr(
           `Essa área ainda tem ${n} ${n === 1 ? 'tarefa' : 'tarefas'}. Conclua ou mova para outra área antes de desligar.`,
@@ -148,13 +148,15 @@ export function AreaDialog({ id }: { id: string | null }) {
             }}
           />
         </div>
-        <p className="sub tw:mt-[8px] tw:text-[13px]">
-          Toque no campo do emoji e escolha qualquer um no teclado de emojis.
-          <span className="pc-only">
-            {' '}
-            No computador: Windows + ponto, ou Ctrl + Cmd + Espaço no Mac.
-          </span>
-        </p>
+        {src ? null : (
+          <p className="sub tw:mt-[8px] tw:text-[13px]">
+            Toque no campo do emoji e escolha qualquer um no teclado de emojis.
+            <span className="pc-only">
+              {' '}
+              No computador: Windows + ponto, ou Ctrl + Cmd + Espaço no Mac.
+            </span>
+          </p>
+        )}
       </div>
       <div>
         <span className="lbl">Periodicidade</span>
@@ -274,7 +276,7 @@ export function AreaDialog({ id }: { id: string | null }) {
           Cancelar
         </button>
         <button type="button" className="btn primary" data-dact="save" onClick={save}>
-          {src ? 'Salvar' : 'Criar área'}
+          {src ? 'Salvar' : 'Adicionar'}
         </button>
       </div>
     </div>

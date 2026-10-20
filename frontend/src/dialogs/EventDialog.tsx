@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
+import { IconLink } from '../components/icons'
 import { REPEAT_LABEL, eventById, isRepeating } from '../lib/events'
 import type { CalEvent, Repeat } from '../lib/types'
 import { parseYmd, uid, ymd } from '../lib/time'
@@ -168,9 +169,12 @@ export function EventDialog({ id, dateKey, opts = {} }: Props) {
               </div>
             ) : (
               <div className="linkbox" key={tid}>
-                <span className="chip green">{`🔗 ${t.title}`}</span>
+                <span className="chip green">
+                  <IconLink />
+                  {t.title}
+                </span>
                 <span className="spacer"></span>
-                <button type="button" className="btn danger" onClick={() => unlink(tid)}>
+                <button type="button" className="btn" onClick={() => unlink(tid)}>
                   Desvincular
                 </button>
               </div>
@@ -179,7 +183,7 @@ export function EventDialog({ id, dateKey, opts = {} }: Props) {
         </div>
       ) : null}
       {opts.linkTaskId ? (
-        <p className="sub tw:-mt-[6px] tw:mb-0 tw:text-[13px]">🔗 Vai ficar ligado à tarefa que você escolheu.</p>
+        <p className="sub tw:-mt-[6px] tw:mb-0 tw:text-[13px]">Vai ficar ligado à tarefa que você escolheu.</p>
       ) : null}
       <div className="row tw:items-end">
         <div className="tw:flex-[1_1_150px]">

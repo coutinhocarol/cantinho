@@ -65,7 +65,7 @@ export function LoginScreen({
         </p>
         {mode === 'login' ? (
           <p className="preview tw:mb-[16px] tw:text-left">
-            Primeira vez por aqui? Escolha “Criar conta” (vale qualquer e-mail).
+            Primeira vez por aqui? Escolha “Criar conta”.
           </p>
         ) : (
           <p className="preview tw:mb-[16px] tw:text-left">

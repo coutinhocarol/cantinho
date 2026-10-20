@@ -1,6 +1,6 @@
 /**
  * Formato do estado do Cantinho trocado com o app (validação da entrada da API).
- * Campos que o banco não guarda (ex.: `v`, `done` de tarefa) são ignorados.
+ * Campos que o banco não guarda (ex.: `v`) são ignorados.
  */
 import { z } from 'zod'
 
@@ -21,14 +21,12 @@ const Area = z.object({
   name: z.string(),
   period: Period,
   emoji: opt(z.string()),
-  color: opt(z.string().max(16)),
   lastDone: opt(num),
   history: opt(z.array(num)),
   createdAt: opt(num),
   order: opt(num),
   acceptsTasks: opt(z.boolean()),
   forceDue: opt(num),
-  okAt: opt(num),
 })
 
 const Task = z.object({

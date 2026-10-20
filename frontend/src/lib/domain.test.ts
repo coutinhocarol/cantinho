@@ -81,10 +81,6 @@ describe('areaStatus (a cada X dias)', () => {
     const st = areaStatus(area({ lastDone: NOW.getTime(), forceDue: t }), NOW.getTime())
     expect(st).toMatchObject({ due: true, forced: true, since: t })
   })
-  it('dispensar a checagem (okAt) conta como checada', () => {
-    const st = areaStatus(area({ lastDone: NOW.getTime() - 20 * DAY, okAt: NOW.getTime() }), NOW.getTime())
-    expect(st.due).toBe(false)
-  })
 })
 
 describe('areaStatus (dias da semana)', () => {
@@ -255,7 +251,7 @@ describe('normalize', () => {
   it('solta o vínculo de tarefa com compromisso que não existe mais', () => {
     const s = fresh()
     s.tasks = [
-      { id: 't', title: 'x', areaId: 'a1', notes: '', due: '', done: false, doneAt: null, createdAt: 0, eventId: 'sumiu' },
+      { id: 't', title: 'x', areaId: 'a1', notes: '', due: '', createdAt: 0, eventId: 'sumiu' },
     ]
     expect(normalize(s, NOW)).toBe(true)
     expect(s.tasks[0].eventId).toBeUndefined()
@@ -336,8 +332,6 @@ const tk = (over: Partial<Task> = {}): Task => ({
   areaId: 'a1',
   notes: '',
   due: '',
-  done: false,
-  doneAt: null,
   createdAt: 0,
   ...over,
 })

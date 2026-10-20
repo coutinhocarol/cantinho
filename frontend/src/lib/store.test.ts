@@ -57,16 +57,14 @@ describe('Store', () => {
     expect(store.getState().areas).toEqual([])
   })
 
-  it('commit grava no aparelho, avisa quem escuta e descarta tarefas concluídas', () => {
+  it('commit grava no aparelho, e avisa quem escuta', () => {
     const store = new Store({ api: fakeApi() })
     const listener = vi.fn()
     store.subscribe(listener)
     store.commit((d) => {
       d.areas.push(area('a'))
-      d.tasks.push({ id: 't', title: 'x', areaId: 'a', notes: '', due: '', done: true, doneAt: 1, createdAt: 1 })
     })
     expect(listener).toHaveBeenCalledTimes(1)
-    expect(store.getState().tasks).toEqual([])
     expect(JSON.parse(localStorage.getItem(LS_KEY)!).areas).toHaveLength(1)
   })
 

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useApp } from '../app/context'
-import { IconCheck, IconPlus } from '../components/icons'
+import { IconCheck, IconNote, IconPlus } from '../components/icons'
 import { LISTS, KINDS } from '../lib/lists'
 import type { ListId } from '../lib/types'
 
@@ -58,7 +58,7 @@ function ListCard({ L }: { L: ListDef }) {
               <div className="task" key={i.id}>
                 <button
                   className="tick"
-                  aria-label="Concluir"
+                  aria-label="Concluir item"
                   onClick={() => actions.doneListItem(L.id, i.id, L.done)}
                 >
                   <IconCheck />
@@ -79,8 +79,8 @@ function ListCard({ L }: { L: ListDef }) {
                           </span>
                         ) : null}
                         {i.note ? (
-                          <span className="chip" title="Tem nota">
-                            📝
+                          <span className="chip" title="Tem nota" aria-label="Tem nota">
+                            <IconNote />
                           </span>
                         ) : null}
                       </span>

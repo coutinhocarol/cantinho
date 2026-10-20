@@ -1,7 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { IconCheck, IconChevL, IconChevR, IconPlus } from '../components/icons'
-import { dueAlertLabel } from '../components/taskParts'
+import { DueAlertInline } from '../components/taskParts'
+import { IconLink } from '../components/icons'
 import { REPEAT_LABEL, eventsOn, isEvDone, isRepeating } from '../lib/events'
 import type { AppState, CalEvent } from '../lib/types'
 import { capitalize, parseYmd, ymd } from '../lib/time'
@@ -19,8 +20,9 @@ function linkedTaskLine(state: AppState, e: CalEvent) {
       {l.map((t, i) => (
         <span key={t.id}>
           {i ? ', ' : ''}
-          {`🔗 ${t.title}`}
-          {dueAlertLabel(t) ? <b className="alert-inline">{` ${dueAlertLabel(t)}`}</b> : null}
+          <IconLink />
+          {t.title}
+          <DueAlertInline t={t} />
         </span>
       ))}
     </span>
@@ -68,7 +70,7 @@ function WeekEvent({
       <button
         type="button"
         className="tick"
-        aria-label="Marcar como feito"
+        aria-label="Concluir compromisso"
         onClick={() => actions.completeEvent(e.id, dayKey)}
       >
         <IconCheck />
@@ -98,8 +100,9 @@ function WeekEvent({
             {lt.map((t, i) => (
               <span key={t.id}>
                 {i ? ', ' : ''}
-                {`🔗 ${t.title}`}
-                {dueAlertLabel(t) ? <b className="alert-inline">{` ${dueAlertLabel(t)}`}</b> : null}
+                <IconLink />
+                {t.title}
+                <DueAlertInline t={t} />
               </span>
             ))}
           </span>
@@ -292,7 +295,7 @@ export function Calendario() {
           onClick={() => openDialog({ kind: 'event', id: null, dateKey: ui.calSel })}
         >
           <IconPlus />
-          Compromisso
+          Novo compromisso
         </button>
       </div>
       <div className={`cal-layout${week ? ' week' : ''}`}>
@@ -405,7 +408,7 @@ export function Calendario() {
                     <button
                       type="button"
                       className="tick"
-                      aria-label="Marcar como feito"
+                      aria-label="Concluir compromisso"
                       onClick={() => actions.completeEvent(e.id, ui.calSel)}
                     >
                       <IconCheck />
@@ -449,7 +452,7 @@ export function Calendario() {
                 onClick={() => openDialog({ kind: 'event', id: null, dateKey: ui.calSel })}
               >
                 <IconPlus />
-                Compromisso neste dia
+                Novo compromisso neste dia
               </button>
             )}
           </aside>

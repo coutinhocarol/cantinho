@@ -19,7 +19,6 @@ export interface Area {
   id: string
   name: string
   emoji: string
-  color?: string
   period: Period
   lastDone: number | null
   history: number[]
@@ -27,7 +26,6 @@ export interface Area {
   order: number
   acceptsTasks?: boolean
   forceDue?: number
-  okAt?: number
 }
 
 export interface Task {
@@ -37,8 +35,6 @@ export interface Task {
   notes: string
   due: string
   quad?: QuadId | ''
-  done: boolean
-  doneAt: number | null
   createdAt: number
   eventId?: string
 }

@@ -252,21 +252,23 @@ export function Areas() {
                           <span className="chip green">Em dia</span>
                         )}
                       </dd>
-                      <dt>Última vez checada</dt>
-                      <dd>
-                        {a.lastDone
-                          ? `${fmtWhen(a.lastDone)} (${rel(a.lastDone)})`
-                          : 'ainda não checada'}
+                      <dt>Última checagem</dt>
+                      <dd title={a.lastDone ? fmtWhen(a.lastDone) : undefined}>
+                        {a.lastDone ? rel(a.lastDone) : 'ainda não checada'}
                       </dd>
                       {st.due ? (
                         <>
                           <dt>Pendente desde</dt>
-                          <dd>{st.since ? `${fmtWhen(st.since)} (${rel(st.since)})` : 'o início'}</dd>
+                          <dd title={st.since ? fmtWhen(st.since) : undefined}>
+                            {st.since ? rel(st.since) : 'o início'}
+                          </dd>
                         </>
                       ) : (
                         <>
-                          <dt>Fica pendente em</dt>
-                          <dd>{st.nextAt ? `${fmtWhen(st.nextAt)} (${rel(st.nextAt)})` : '—'}</dd>
+                          <dt>Fica pendente</dt>
+                          <dd title={st.nextAt ? fmtWhen(st.nextAt) : undefined}>
+                            {st.nextAt ? rel(st.nextAt) : '—'}
+                          </dd>
                         </>
                       )}
                       <dt>Tarefas</dt>

@@ -106,7 +106,6 @@ export const sampleState = () => ({
       id: 'a1',
       name: 'Quarto',
       emoji: '🛏️',
-      color: 'rose',
       period: { type: 'interval', every: 7, unit: 'days' },
       lastDone: 1729300000000,
       history: [1729300000000, 1729200000000],
@@ -129,7 +128,7 @@ export const sampleState = () => ({
   tasks: [
     {
       id: 't1', title: 'Trocar a roupa de cama', quad: 'agendar', areaId: 'a1', notes: 'lençol azul',
-      due: '2026-10-25', done: false, doneAt: null, createdAt: 1729300000000, eventId: 'e1',
+      due: '2026-10-25', createdAt: 1729300000000, eventId: 'e1',
     },
     { id: 't2', title: 'Sem classificação', quad: '', areaId: 'a1', notes: '', due: '', createdAt: 1729300000001 },
   ],

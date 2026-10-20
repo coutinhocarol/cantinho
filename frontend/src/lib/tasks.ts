@@ -24,7 +24,7 @@ export const isDueAlert = (t: Pick<Task, 'due'>, now = new Date()) => {
 /** Tarefas em aberto que entram em "Tarefas pendentes" na Bora. */
 export function pendingTasks(s: AppState, now = new Date()): Task[] {
   return s.tasks.filter(
-    (t) => !t.done && (t.quad === 'fazer' || t.quad === 'delegar' || dueStatus(t, now) !== null),
+    (t) => (t.quad === 'fazer' || t.quad === 'delegar' || dueStatus(t, now) !== null),
   )
 }
 
@@ -32,6 +32,6 @@ export function pendingTasks(s: AppState, now = new Date()): Task[] {
 export function organizeTasks(s: AppState, now = new Date()): Task[] {
   const pend = new Set(pendingTasks(s, now).map((t) => t.id))
   return s.tasks.filter(
-    (t) => !t.done && !pend.has(t.id) && (!t.quad || (t.quad === 'agendar' && !isLinked(s, t))),
+    (t) => !pend.has(t.id) && (!t.quad || (t.quad === 'agendar' && !isLinked(s, t))),
   )
 }

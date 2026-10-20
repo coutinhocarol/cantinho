@@ -28,8 +28,6 @@ const task = (id: string, title: string, areaId: string, over: Partial<Task> = {
   areaId,
   notes: '',
   due: '',
-  done: false,
-  doneAt: null,
   createdAt: now(),
   ...over,
 })
@@ -161,7 +159,7 @@ describe('Início (Bora)', () => {
     const { user, store } = setup((s) => void s.events.push(e))
     expect(screen.getByText('Dentista')).toBeInTheDocument()
     expect(screen.getByText('23:30')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Marcar compromisso como feito' }))
+    await user.click(screen.getByRole('button', { name: 'Concluir compromisso' }))
     expect(store.getState().events).toEqual([])
     expect(screen.getByText('Compromisso concluído')).toBeInTheDocument()
   })
@@ -174,7 +172,7 @@ describe('Áreas', () => {
     await user.click(screen.getByRole('button', { name: /Nova área/ }))
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText('Todo dia'.replace('Todo dia', 'A cada 7 dias'))).toBeInTheDocument()
-    await user.click(within(dialog).getByRole('button', { name: 'Criar área' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     expect(store.getState().areas).toHaveLength(0) // sem nome não salva
     await user.type(within(dialog).getByLabelText('Emoji da área'), '🌿x')
     await user.type(within(dialog).getByPlaceholderText('Ex.: Quarto'), 'Jardim')
@@ -182,7 +180,7 @@ describe('Áreas', () => {
     await user.clear(every)
     await user.type(every, '3')
     expect(within(dialog).getByText('A cada 3 dias', { selector: '.preview' })).toBeInTheDocument()
-    await user.click(within(dialog).getByRole('button', { name: 'Criar área' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     const a = store.getState().areas[0]
     expect(a).toMatchObject({ name: 'Jardim', emoji: '🌿', period: { type: 'interval', every: 3, unit: 'days' }, lastDone: null, order: 0 })
     expect(screen.getByText('Jardim')).toBeInTheDocument()
@@ -206,11 +204,11 @@ describe('Áreas', () => {
     expect(within(dialog).getByText('Toda terça às 21:00')).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Ter' })) // desmarca
     expect(within(dialog).getByText('Escolha os dias')).toBeInTheDocument()
-    await user.click(within(dialog).getByRole('button', { name: 'Criar área' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     expect(within(dialog).getByText('Escolha pelo menos um dia da semana.')).toBeInTheDocument()
     expect(store.getState().areas).toHaveLength(0)
     await user.click(within(dialog).getByRole('button', { name: 'Qua' }))
-    await user.click(within(dialog).getByRole('button', { name: 'Criar área' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     expect(store.getState().areas[0].period).toEqual({ type: 'weekly', days: [3], time: '21:00' })
   })
 
@@ -284,10 +282,10 @@ describe('Tarefas', () => {
     await user.selectOptions(within(dialog).getByLabelText('Matriz de priorização'), 'agendar')
     expect(within(dialog).getByText('Obrigatório em Agendar: ligue a um compromisso.')).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
-    expect(store.getState().tasks[0]).toMatchObject({ title: 'Organizar armário', areaId: 'a', quad: 'agendar', done: false })
+    expect(store.getState().tasks[0]).toMatchObject({ title: 'Organizar armário', areaId: 'a', quad: 'agendar' })
     // abre "Agendar tarefa"
     expect(screen.getByRole('heading', { name: 'Agendar tarefa' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Agora não' }))
+    await user.click(screen.getByRole('button', { name: 'Cancelar' }))
     expect(screen.getByText('Sem compromisso')).toBeInTheDocument()
   })
 
@@ -306,7 +304,7 @@ describe('Tarefas', () => {
     expect(s.tasks[0].eventId).toBe(s.events[0].id)
   })
 
-  it('matriz: mover pelo diálogo e voltar para "Sem classificação"', async () => {
+  it('matriz: tocar na tarefa abre a edição, onde se muda o quadrante', async () => {
     const { user, store } = setup((s) => {
       s.areas.push(area('a', 'Quarto'))
       s.tasks.push(task('1', 'Lavar roupa', 'a'))
@@ -315,12 +313,15 @@ describe('Tarefas', () => {
     await user.click(screen.getByRole('button', { name: 'Matriz de priorização' }))
     expect(localStorage.getItem('cantinho-tview')).toBe('matriz')
     await user.click(screen.getByRole('button', { name: 'Lavar roupa' }))
-    await user.click(document.querySelector('.mv-btn.q-fazer') as HTMLElement)
+    expect(screen.getByRole('heading', { name: 'Editar tarefa' })).toBeInTheDocument()
+    await user.selectOptions(screen.getByLabelText('Matriz de priorização'), 'fazer')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(store.getState().tasks[0].quad).toBe('fazer')
     const q1 = document.querySelector('.quad.q-fazer') as HTMLElement
     expect(within(q1).getByText('Lavar roupa')).toBeInTheDocument()
     await user.click(within(q1).getByRole('button', { name: 'Lavar roupa' }))
-    await user.click(screen.getByRole('button', { name: /Sem classificação/ }))
+    await user.selectOptions(screen.getByLabelText('Matriz de priorização'), '')
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
     expect(store.getState().tasks[0].quad).toBe('')
   })
 
@@ -453,7 +454,7 @@ describe('Calendário', () => {
     await goTo(user, 'Calendário')
     const today = new Date()
     expect(screen.getByText('Nenhum compromisso neste dia.')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /^Compromisso$/ }))
+    await user.click(screen.getByRole('button', { name: /^Novo compromisso$/ }))
     const dialog = screen.getByRole('dialog')
     await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     expect(within(dialog).getByText('Dê um nome ao compromisso.')).toBeInTheDocument()
@@ -482,7 +483,7 @@ describe('Calendário', () => {
   it('dia inteiro dispensa horário', async () => {
     const { user, store } = setup()
     await goTo(user, 'Calendário')
-    await user.click(screen.getByRole('button', { name: /^Compromisso$/ }))
+    await user.click(screen.getByRole('button', { name: /^Novo compromisso$/ }))
     await user.type(screen.getByLabelText('Compromisso'), 'Feriado')
     await user.click(screen.getByLabelText('Dia inteiro'))
     await user.click(screen.getByRole('button', { name: 'Adicionar' }))
@@ -528,7 +529,7 @@ describe('Calendário', () => {
     const { user, store } = setup((s) => void s.events.push(e))
     await goTo(user, 'Calendário')
     const side = document.querySelector('.cal-side') as HTMLElement
-    await user.click(within(side).getByRole('button', { name: 'Marcar como feito' }))
+    await user.click(within(side).getByRole('button', { name: 'Concluir compromisso' }))
     expect(store.getState().events[0].doneDates).toEqual([tk])
     expect(screen.getByText('Compromisso concluído')).toBeInTheDocument()
   })
@@ -542,7 +543,7 @@ describe('Coisinhas', () => {
     await user.type(input, 'Leite{Enter}')
     expect(store.getState().lists.indicacoes.map((i) => i.title)).toEqual(['Leite'])
     expect(input).toHaveValue('')
-    await user.click(screen.getByRole('button', { name: 'Concluir' }))
+    await user.click(screen.getByRole('button', { name: 'Concluir item' }))
     expect(store.getState().lists.indicacoes).toEqual([])
     expect(screen.getByText('Indicação concluída')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Desfazer' }))
@@ -589,7 +590,7 @@ describe('Bora: novas pendências', () => {
     })
     expect(screen.getByRole('heading', { name: 'Repriorizar tarefas' })).toBeInTheDocument()
     expect(screen.getByText('Revisar a matriz de priorização')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Marcar repriorização como feita' }))
+    await user.click(screen.getByRole('button', { name: 'Checar repriorização' }))
     expect(store.getState().reprioDate).toBe(ymd(new Date()))
     expect(screen.getByText('Tarefas repriorizadas hoje.')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Desfazer' }))
@@ -634,14 +635,14 @@ describe('Bora: novas pendências', () => {
         task('t3', 'Amanhã', 'a', { quad: 'fazer', due: day(1) }),
       )
     })
-    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
-    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+    expect(screen.getAllByText(/Atrasada ·/)).toHaveLength(1)
+    expect(screen.getAllByText('Vence hoje')).toHaveLength(1)
     await goTo(user, 'Tarefas')
-    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
-    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+    expect(screen.getAllByText(/Atrasada ·/)).toHaveLength(1)
+    expect(screen.getAllByText('Vence hoje')).toHaveLength(1)
     await user.click(screen.getByRole('button', { name: 'Matriz de priorização' }))
-    expect(screen.getAllByText(/⚠️ Atrasada/)).toHaveLength(1)
-    expect(screen.getAllByText('⚠️ Vence hoje')).toHaveLength(1)
+    expect(screen.getAllByText(/Atrasada ·/)).toHaveLength(1)
+    expect(screen.getAllByText('Vence hoje')).toHaveLength(1)
   })
 
   it('compromisso de hoje mostra as tarefas ligadas', () => {
@@ -653,8 +654,9 @@ describe('Bora: novas pendências', () => {
       })
       s.tasks.push(task('t', 'Levar exames', 'a', { quad: 'agendar', eventId: 'e1', due: tkey }))
     })
-    expect(screen.getByText('🔗 Levar exames')).toBeInTheDocument()
-    expect(screen.getAllByText('⚠️ Vence hoje').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Levar exames').length).toBeGreaterThan(0)
+    expect(document.querySelector('.linked-title')).toHaveTextContent('Levar exames')
+    expect(screen.getAllByText('Vence hoje').length).toBeGreaterThan(0)
   })
 
   it('cada card de área a checar traz o aviso para checar as tarefas', async () => {

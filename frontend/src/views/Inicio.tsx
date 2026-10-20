@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
-import { Flower, Glass, IconCheck } from '../components/icons'
+import { Flower, Glass, IconCheck, IconNote } from '../components/icons'
 import { LinkedTasks, TaskTags } from '../components/taskParts'
 import { acceptsTasks, areaById, areaStatus, sortedAreas } from '../lib/areas'
 import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
@@ -59,7 +59,7 @@ function StatusLine({ a, st }: { a: Area; st: AreaStatus }) {
 
 function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
   const { actions, state, setTab, setUi } = useApp()
-  const open = state.tasks.filter((t) => !t.done && t.areaId === a.id).length
+  const open = state.tasks.filter((t) => t.areaId === a.id).length
   return (
     <div className={`area-row ${st.due ? 'due' : ''}`}>
       <Ring a={a} st={st} />
@@ -69,7 +69,7 @@ function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
         {acceptsTasks(a) ? (
           <button
             type="button"
-            className="area-todo"
+            className="nav-pill"
             onClick={() => {
               setUi({ tview: 'area' })
               setTab('quadro')
@@ -94,7 +94,7 @@ function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
 function TaskRow({ t }: { t: Task }) {
   const c = useApp()
   return (
-    <div className={`task ${t.done ? 'done' : ''}`}>
+    <div className="task">
       <button
         className="tick"
         onClick={() => c.actions.toggleTask(t.id)}
@@ -116,7 +116,7 @@ function TaskRow({ t }: { t: Task }) {
 
 function MissedRow({ m }: { m: MissedEvent }) {
   const c = useApp()
-  const tasks = c.state.tasks.filter((t) => m.taskIds.includes(t.id) && !t.done)
+  const tasks = c.state.tasks.filter((t) => m.taskIds.includes(t.id))
   return (
     <div className="task missed">
       <div className="task-body">
@@ -167,7 +167,7 @@ export function Inicio() {
   const due = areas.filter((x) => x.st.due).sort((x, y) => (x.st.since || 0) - (y.st.since || 0))
   const pend = pendingTasks(state)
   const org = organizeTasks(state)
-  const openCount = state.tasks.filter((t) => !t.done).length
+  const openCount = state.tasks.length
   const byDue = (x: Task, y: Task) => (x.due || '9').localeCompare(y.due || '9')
   const orgOrdered = [
     ...sortedAreas(state).flatMap((a) => org.filter((t) => t.areaId === a.id).sort(byDue)),
@@ -251,7 +251,7 @@ export function Inicio() {
           <button
             className="tick"
             onClick={() => actions.completeEvent(e.id, tk)}
-            aria-label="Marcar compromisso como feito"
+            aria-label="Concluir compromisso"
           >
             <IconCheck />
           </button>
@@ -269,8 +269,8 @@ export function Inicio() {
                   <span className="chip">{REPEAT_LABEL[e.repeat]}</span>
                 ) : null}
                 {e.notes ? (
-                  <span className="chip" title="Tem nota">
-                    📝
+                  <span className="chip" title="Tem nota" aria-label="Tem nota">
+                    <IconNote />
                   </span>
                 ) : null}
               </span>
@@ -306,6 +306,7 @@ export function Inicio() {
                 <div className="sec-head">
                   <h2>Compromissos de hoje</h2>
                   <Count n={evPend.length} />
+                  <InfoButton text="Mostra os compromissos que acontecem hoje e ainda não foram marcados como feitos. As tarefas ligadas a cada um aparecem embaixo dele. Os de amanhã em diante ficam só no Calendário." />
                 </div>
                 {evNode}
               </div>
@@ -313,12 +314,13 @@ export function Inicio() {
                 <div className="sec-head">
                   <h2>Água de hoje</h2>
                   <Count n={goal - count} />
+                  <InfoButton text="Meta diária de copos (250 ml cada). O número mostra quantos copos faltam e a contagem volta a zero todo dia. Toque em Meta para mudar a quantidade." />
                 </div>
                 <div className="water">
                   <div className="water-head">
                     <button
                       type="button"
-                      className="btn ghost water-goal"
+                      className="btn water-goal"
                       onClick={() => openDialog({ kind: 'waterGoal' })}
                     >
                       {`Meta (${(Math.round(goal * 250) / 1000).toLocaleString('pt-BR')} L)`}
@@ -358,6 +360,7 @@ export function Inicio() {
                 <div className="sec-head">
                   <h2>Áreas a checar</h2>
                   <Count n={due.length} />
+                  <InfoButton text="Mostra as áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
                 </div>
                 {areasNode}
               </div>
@@ -366,34 +369,34 @@ export function Inicio() {
                   <div className="sec-head">
                     <h2>Repriorizar tarefas</h2>
                     <Count n={reprioPending ? 1 : 0} />
-                    <InfoButton text="Todo dia, revise a matriz de priorização: o que mudou de quadrante, o que já pode ser eliminado. Marque como feito depois de revisar; amanhã a pendência volta. Só aparece quando há tarefas em aberto." />
+                    <InfoButton text="Todo dia, revise a matriz de priorização: o que mudou de quadrante, o que já pode ser eliminado. Toque em Checar depois de revisar; amanhã a pendência volta. Só aparece quando há tarefas em aberto." />
                   </div>
                   {!openCount ? (
                     <p className="sub">Nenhuma tarefa para repriorizar.</p>
                   ) : reprioPending ? (
-                    <div className="area-row due reprio">
+                    <div className="area-row due">
                       <div className="area-txt">
                         <b>Revisar a matriz de priorização</b>
                         <span className="late">Pendente hoje</span>
+                        <button
+                          type="button"
+                          className="nav-pill"
+                          onClick={() => {
+                            setUi({ tview: 'matriz' })
+                            setTab('quadro')
+                          }}
+                        >
+                          Abrir matriz
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="btn"
-                        onClick={() => {
-                          setUi({ tview: 'matriz' })
-                          setTab('quadro')
-                        }}
-                      >
-                        Abrir matriz
-                      </button>
                       <button
                         type="button"
                         className="check-btn"
                         onClick={actions.doneReprio}
-                        aria-label="Marcar repriorização como feita"
+                        aria-label="Checar repriorização"
                       >
                         <IconCheck />
-                        <span>Feito</span>
+                        <span>Checar</span>
                       </button>
                     </div>
                   ) : (
