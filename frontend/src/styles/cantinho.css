@@ -496,8 +496,21 @@ textarea.field{min-height:72px;resize:vertical}
   .wk-pick{flex-direction:column;align-items:flex-start;gap:2px}
   .wk-add{align-self:flex-end;margin-top:-34px}
 }
-.wk.rt .wk-day{min-height:0}
-.wk.rt .wk-wd{text-transform:capitalize}
+.rt-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:20px;background:var(--surface)}
+.rt-grid{min-width:860px;padding:8px 10px 12px}
+.rt-row{display:grid;grid-template-columns:52px repeat(7,minmax(0,1fr))}
+.rt-headrow{position:sticky;top:0}
+.rt-dayname{padding:6px 4px 8px;font-size:14px;font-weight:600;color:var(--muted);text-transform:capitalize;text-align:center}
+.rt-allday{border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.rt-gutter{font-size:11px;color:var(--muted);padding:6px 6px 0 0;text-align:right}
+.rt-cell{display:flex;flex-direction:column;gap:4px;padding:4px 2px;border-left:1px solid var(--line);min-width:0}
+.rt-body{margin-top:10px}
+.rt-hour{position:relative;font-size:11px;color:var(--muted);text-align:right;padding-right:6px}
+.rt-hour span{position:relative;top:-7px}
+.rt-col{position:relative;border-left:1px solid var(--line);background-image:linear-gradient(var(--line) 1px,transparent 1px);min-width:0}
+.rt-block{position:absolute;box-sizing:border-box;overflow:hidden;border:0;border-radius:8px;padding:3px 6px;text-align:left;font:inherit;display:flex;flex-direction:column;gap:0;background:var(--green-tint);color:var(--green-ink);border-left:3px solid var(--green)}
+.rt-block .wk-time{font-size:11px;font-weight:600;display:block;line-height:1.3}
+.rt-block .wk-title{font-size:13px;line-height:1.25}
 .rt-ev{display:flex;flex-direction:column;gap:1px;width:100%;border:0;text-align:left;font:inherit;background:var(--green-tint);color:var(--green-ink);border-radius:12px;padding:8px 10px}
 .rt-ev .wk-time{font-size:14px;font-weight:600;display:flex;flex-direction:column;line-height:1.35}
 .rt-other{margin-top:16px;border:1px solid var(--line);border-radius:20px;background:var(--surface);padding:12px 14px}
