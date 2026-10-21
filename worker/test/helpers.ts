@@ -139,7 +139,7 @@ export const sampleState = () => ({
       createdAt: 1729300000000,
     },
     {
-      id: 'e2', title: 'Feriado', date: '2026-11-02', allDay: true, start: '', end: '', repeat: 'yearly',
+      id: 'e2', title: 'Feriado', date: '2026-11-02', allDay: true, start: '', end: '', repeat: 'none',
       notes: 'sem trabalho', origin: '2026-11-02', createdAt: 1729300000000,
     },
   ],

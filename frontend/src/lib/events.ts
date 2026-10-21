@@ -5,8 +5,6 @@ export const REPEAT_LABEL: Record<Repeat, string> = {
   none: 'Não repete',
   daily: 'Todo dia',
   weekly: 'Toda semana',
-  monthly: 'Todo mês',
-  yearly: 'Todo ano',
 }
 
 export function occursOn(e: CalEvent, key: string): boolean {
@@ -17,14 +15,6 @@ export function occursOn(e: CalEvent, key: string): boolean {
   const b = parseYmd(e.origin || e.date)
   const t = parseYmd(key)
   if (rep === 'weekly') return Math.round((t.getTime() - b.getTime()) / DAY) % 7 === 0
-  const lastOf = (y: number, m: number) => new Date(y, m + 1, 0).getDate()
-  if (rep === 'monthly')
-    return t.getDate() === Math.min(b.getDate(), lastOf(t.getFullYear(), t.getMonth()))
-  if (rep === 'yearly')
-    return (
-      t.getMonth() === b.getMonth() &&
-      t.getDate() === Math.min(b.getDate(), lastOf(t.getFullYear(), b.getMonth()))
-    )
   return false
 }
 

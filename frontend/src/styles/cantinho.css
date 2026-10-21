@@ -513,9 +513,6 @@ textarea.field{min-height:72px;resize:vertical}
 .rt-block .wk-title{font-size:13px;line-height:1.25}
 .rt-ev{display:flex;flex-direction:column;gap:1px;width:100%;border:0;text-align:left;font:inherit;background:var(--green-tint);color:var(--green-ink);border-radius:12px;padding:8px 10px}
 .rt-ev .wk-time{font-size:14px;font-weight:600;display:flex;flex-direction:column;line-height:1.35}
-.rt-other{margin-top:16px;border:1px solid var(--line);border-radius:20px;background:var(--surface);padding:12px 14px}
-.rt-other h2{margin:0 0 10px;font-size:15px}
-.rt-other-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
 .areas-bulk{display:flex;justify-content:flex-end;margin:0 0 14px}
 .btn:disabled{opacity:.45;cursor:default}
 .areas-head .btn.primary{margin-left:0}

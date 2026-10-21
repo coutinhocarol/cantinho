@@ -47,6 +47,21 @@ export function normalize(s: AppState, now = new Date()): boolean {
       ch = true
     }
   }
+  // mensal e anual não existem mais: viram compromissos únicos na data da próxima ocorrência
+  for (const e of s.events) {
+    const r = e.repeat as string
+    if (r === 'monthly' || r === 'yearly') {
+      e.repeat = 'none'
+      ch = true
+    }
+  }
+  for (const m of s.missed) {
+    const r = m.repeat as string
+    if (r === 'monthly' || r === 'yearly') {
+      m.repeat = 'none'
+      ch = true
+    }
+  }
   const before = s.events.length
   s.events = s.events.filter(
     (e) => !((!e.repeat || e.repeat === 'none') && (e.doneDates || []).includes(e.date)),

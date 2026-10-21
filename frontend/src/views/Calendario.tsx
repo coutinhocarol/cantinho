@@ -208,13 +208,6 @@ function rotinaSort(a: CalEvent, b: CalEvent) {
   )
 }
 
-function rotinaWhen(e: CalEvent) {
-  const d = parseYmd(e.origin || e.date)
-  return e.repeat === 'monthly'
-    ? `Todo dia ${d.getDate()}`
-    : `Todo ${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}`
-}
-
 interface Placed {
   e: CalEvent
   s: number
@@ -254,7 +247,7 @@ function placeDay(evs: CalEvent[]): Placed[] {
   return items
 }
 
-function RotinaChip({ e, sub }: { e: CalEvent; sub?: string }) {
+function RotinaChip({ e }: { e: CalEvent }) {
   const { openDialog } = useApp()
   return (
     <button
@@ -262,7 +255,6 @@ function RotinaChip({ e, sub }: { e: CalEvent; sub?: string }) {
       className="rt-ev"
       onClick={() => openDialog({ kind: 'event', id: e.id })}
     >
-      {sub ? <span className="wk-time">{sub}</span> : null}
       <span className="wk-title">{e.title}</span>
     </button>
   )
@@ -273,7 +265,6 @@ function Rotina() {
   const reps = (state.events || []).filter((e) => e.date && isRepeating(e))
   const daily = reps.filter((e) => e.repeat === 'daily')
   const weekly = reps.filter((e) => e.repeat === 'weekly')
-  const others = reps.filter((e) => e.repeat === 'monthly' || e.repeat === 'yearly').sort(rotinaSort)
   const perDay = ROTINA_DAYS.map((_, i) =>
     [...daily, ...weekly.filter((e) => rotinaDay(e) === i)].sort(rotinaSort),
   )
@@ -284,83 +275,69 @@ function Rotina() {
   const hours = Array.from({ length: hi - lo }, (_, i) => lo + i)
   const hasAllDay = perDay.some((evs) => evs.some((e) => e.allDay))
   return (
-    <>
-      <div className="rt-scroll">
-        <div className="rt-grid">
-          <div className="rt-row rt-headrow">
-            <div />
-            {ROTINA_DAYS.map((name) => (
-              <div key={name} className="rt-dayname">
-                {name}
+    <div className="rt-scroll">
+      <div className="rt-grid">
+        <div className="rt-row rt-headrow">
+          <div />
+          {ROTINA_DAYS.map((name) => (
+            <div key={name} className="rt-dayname">
+              {name}
+            </div>
+          ))}
+        </div>
+        {hasAllDay ? (
+          <div className="rt-row rt-allday">
+            <div className="rt-gutter">Dia inteiro</div>
+            {perDay.map((evs, i) => (
+              <div key={i} className="rt-cell">
+                {evs
+                  .filter((e) => e.allDay)
+                  .map((e) => (
+                    <RotinaChip key={e.id} e={e} />
+                  ))}
               </div>
             ))}
           </div>
-          {hasAllDay ? (
-            <div className="rt-row rt-allday">
-              <div className="rt-gutter">Dia inteiro</div>
-              {perDay.map((evs, i) => (
-                <div key={i} className="rt-cell">
-                  {evs
-                    .filter((e) => e.allDay)
-                    .map((e) => (
-                      <RotinaChip key={e.id} e={e} />
-                    ))}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <div className="rt-row rt-body">
-            <div className="rt-hours">
-              {hours.map((h) => (
-                <div key={h} className="rt-hour" style={{ height: HOUR_PX }}>
-                  <span>{`${pad2(h)}:00`}</span>
-                </div>
-              ))}
-            </div>
-            {timed.map((placed, i) => (
-              <div
-                key={i}
-                className="rt-col"
-                style={{ height: hours.length * HOUR_PX, backgroundSize: `100% ${HOUR_PX}px` }}
-              >
-                {placed.map((p) => (
-                  <button
-                    key={p.e.id}
-                    type="button"
-                    className="rt-block"
-                    style={{
-                      top: ((p.s - lo * 60) / 60) * HOUR_PX,
-                      height: Math.max(20, ((p.f - p.s) / 60) * HOUR_PX - 2),
-                      left: `${(p.col / p.cols) * 100}%`,
-                      width: `calc(${100 / p.cols}% - 2px)`,
-                    }}
-                    onClick={() => openDialog({ kind: 'event', id: p.e.id })}
-                  >
-                    <span className="wk-time">
-                      {p.e.start}
-                      {p.e.end ? ` – ${p.e.end}` : ''}
-                    </span>
-                    <span className="wk-title">{p.e.title}</span>
-                  </button>
-                ))}
+        ) : null}
+        <div className="rt-row rt-body">
+          <div className="rt-hours">
+            {hours.map((h) => (
+              <div key={h} className="rt-hour" style={{ height: HOUR_PX }}>
+                <span>{`${pad2(h)}:00`}</span>
               </div>
             ))}
           </div>
+          {timed.map((placed, i) => (
+            <div
+              key={i}
+              className="rt-col"
+              style={{ height: hours.length * HOUR_PX, backgroundSize: `100% ${HOUR_PX}px` }}
+            >
+              {placed.map((p) => (
+                <button
+                  key={p.e.id}
+                  type="button"
+                  className="rt-block"
+                  style={{
+                    top: ((p.s - lo * 60) / 60) * HOUR_PX,
+                    height: Math.max(20, ((p.f - p.s) / 60) * HOUR_PX - 2),
+                    left: `${(p.col / p.cols) * 100}%`,
+                    width: `calc(${100 / p.cols}% - 2px)`,
+                  }}
+                  onClick={() => openDialog({ kind: 'event', id: p.e.id })}
+                >
+                  <span className="wk-time">
+                    {p.e.start}
+                    {p.e.end ? ` – ${p.e.end}` : ''}
+                  </span>
+                  <span className="wk-title">{p.e.title}</span>
+                </button>
+              ))}
+            </div>
+          ))}
         </div>
       </div>
-      <section className="rt-other">
-        <h2>Mensais e anuais</h2>
-        {others.length ? (
-          <div className="rt-other-list">
-            {others.map((e) => (
-              <RotinaChip key={e.id} e={e} sub={rotinaWhen(e)} />
-            ))}
-          </div>
-        ) : (
-          <p className="wk-empty">Nenhum compromisso mensal ou anual.</p>
-        )}
-      </section>
-    </>
+    </div>
   )
 }
 
