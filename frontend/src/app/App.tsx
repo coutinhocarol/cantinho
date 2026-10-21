@@ -28,11 +28,14 @@ const ls = (k: string) => {
   }
 }
 
+const calViewOf = (v: string | null): UiState['calView'] =>
+  v === 'semana' || v === 'rotina' ? v : 'mes'
+
 function initialUi(): UiState {
   const t = new Date()
   return {
     tview: ls('cantinho-tview') === 'matriz' ? 'matriz' : 'area',
-    calView: ls('cantinho-calview') === 'semana' ? 'semana' : 'mes',
+    calView: calViewOf(ls('cantinho-calview')),
     calSel: ymd(t),
     calMonth: { y: t.getFullYear(), m: t.getMonth() },
     listTab: 'indicacoes',

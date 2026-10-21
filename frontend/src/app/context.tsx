@@ -7,7 +7,7 @@ export type TabId = 'inicio' | 'quadro' | 'calendario' | 'listas' | 'areas'
 
 export interface UiState {
   tview: 'area' | 'matriz'
-  calView: 'mes' | 'semana'
+  calView: 'mes' | 'semana' | 'rotina'
   calSel: string
   calMonth: { y: number; m: number }
   listTab: ListId

@@ -190,6 +190,87 @@ function Week({ today }: { today: string }) {
   )
 }
 
+const ROTINA_DAYS = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
+
+const rotinaDay = (e: CalEvent) => (parseYmd(e.origin || e.date).getDay() + 6) % 7
+
+function rotinaSort(a: CalEvent, b: CalEvent) {
+  return (
+    (a.allDay ? 0 : 1) - (b.allDay ? 0 : 1) ||
+    (a.start || '').localeCompare(b.start || '') ||
+    String(a.title).localeCompare(String(b.title))
+  )
+}
+
+function rotinaWhen(e: CalEvent) {
+  const d = parseYmd(e.origin || e.date)
+  return e.repeat === 'monthly'
+    ? `Todo dia ${d.getDate()}`
+    : `Todo ${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}`
+}
+
+function RotinaEvent({ e, sub }: { e: CalEvent; sub?: string }) {
+  const { openDialog } = useApp()
+  return (
+    <button
+      type="button"
+      className="rt-ev"
+      onClick={() => openDialog({ kind: 'event', id: e.id })}
+    >
+      <span className="wk-time">
+        {sub ?? (e.allDay ? 'Dia inteiro' : e.start)}
+        {sub === undefined && !e.allDay && e.end ? <span className="wk-end">{e.end}</span> : null}
+      </span>
+      <span className="wk-title">{e.title}</span>
+    </button>
+  )
+}
+
+function Rotina() {
+  const { state } = useApp()
+  const reps = (state.events || []).filter((e) => e.date && isRepeating(e))
+  const daily = reps.filter((e) => e.repeat === 'daily').sort(rotinaSort)
+  const weekly = reps.filter((e) => e.repeat === 'weekly')
+  const others = reps
+    .filter((e) => e.repeat === 'monthly' || e.repeat === 'yearly')
+    .sort((a, b) => rotinaSort(a, b))
+  return (
+    <>
+      <div className="wk rt">
+        {ROTINA_DAYS.map((name, i) => {
+          const evs = [...daily, ...weekly.filter((e) => rotinaDay(e) === i)].sort(rotinaSort)
+          return (
+            <section key={name} className="wk-day">
+              <div className="wk-head">
+                <span className="wk-wd">{name}</span>
+              </div>
+              <div className="wk-list">
+                {evs.length ? (
+                  evs.map((e) => <RotinaEvent key={e.id} e={e} />)
+                ) : (
+                  <p className="wk-empty">Nada recorrente.</p>
+                )}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+      <section className="rt-other">
+        <h2>Mensais e anuais</h2>
+        {others.length ? (
+          <div className="rt-other-list">
+            {others.map((e) => (
+              <RotinaEvent key={e.id} e={e} sub={rotinaWhen(e)} />
+            ))}
+          </div>
+        ) : (
+          <p className="wk-empty">Nenhum compromisso mensal ou anual.</p>
+        )}
+      </section>
+    </>
+  )
+}
+
 function weekTitle(ui: { calSel: string }) {
   const st = weekStartOf(ui.calSel)
   const a = st
@@ -207,6 +288,7 @@ export function Calendario() {
   const { state, ui, setUi, actions, openDialog } = useApp()
   const barRef = useRef<HTMLDivElement>(null)
   const sideRef = useRef<HTMLElement>(null)
+  const rotina = ui.calView === 'rotina'
   const week = ui.calView === 'semana'
   const today = ymd(new Date())
 
@@ -243,7 +325,7 @@ export function Calendario() {
     parseYmd(ui.calSel).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }),
   )
 
-  const setView = (v: 'mes' | 'semana') => {
+  const setView = (v: 'mes' | 'semana' | 'rotina') => {
     setUi({ calView: v })
     try {
       localStorage.setItem('cantinho-calview', v)
@@ -298,18 +380,29 @@ export function Calendario() {
           Novo compromisso
         </button>
       </div>
-      <div className={`cal-layout${week ? ' week' : ''}`}>
+      <div className={`cal-layout${week || rotina ? ' week' : ''}`}>
         <div>
           <div className="tview">
             <div className="seg inl">
-              <button type="button" aria-pressed={!week} onClick={() => setView('mes')}>
+              <button
+                type="button"
+                aria-pressed={!week && !rotina}
+                onClick={() => setView('mes')}
+              >
                 Mês
               </button>
               <button type="button" aria-pressed={week} onClick={() => setView('semana')}>
                 Semana
               </button>
+              <button type="button" aria-pressed={rotina} onClick={() => setView('rotina')}>
+                Rotina
+              </button>
             </div>
           </div>
+          {rotina ? (
+            <Rotina />
+          ) : (
+            <>
           <div className="cal-bar" ref={barRef}>
             <span className="cal-title">{week ? weekTitle(ui) : title}</span>
             <button type="button" className="btn" onClick={goToday}>
@@ -389,8 +482,10 @@ export function Calendario() {
               </div>
             </div>
           )}
+            </>
+          )}
         </div>
-        {week ? null : (
+        {week || rotina ? null : (
           <aside className="cal-side" ref={sideRef}>
             <h2>
               {selTitle}
