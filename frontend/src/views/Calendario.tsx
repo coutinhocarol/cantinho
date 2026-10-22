@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { useApp } from '../app/context'
 import { IconCheck, IconChevL, IconChevR, IconPlus } from '../components/icons'
 import { DueAlertInline } from '../components/taskParts'
 import { IconLink } from '../components/icons'
 import { REPEAT_LABEL, eventsOn, isEvDone, isRepeating } from '../lib/events'
-import type { AppState, CalEvent } from '../lib/types'
+import type { AppState, CalEvent, Task } from '../lib/types'
 import { capitalize, parseYmd, ymd } from '../lib/time'
 
 function weekStartOf(key: string) {
@@ -18,6 +18,21 @@ function linkedTaskLine(state: AppState, e: CalEvent) {
   return l.length ? (
     <span>
       {l.map((t, i) => (
+        <span key={t.id}>
+          {i ? ', ' : ''}
+          <IconLink />
+          {t.title}
+          <DueAlertInline t={t} />
+        </span>
+      ))}
+    </span>
+  ) : null
+}
+
+function WkLinks({ tasks }: { tasks: Task[] }) {
+  return tasks.length ? (
+    <span className="wk-link">
+      {tasks.map((t, i) => (
         <span key={t.id}>
           {i ? ', ' : ''}
           <IconLink />
@@ -95,18 +110,7 @@ function WeekEvent({
         onClick={() => openDialog({ kind: 'event', id: e.id })}
       >
         <span className="wk-title">{e.title}</span>
-        {lt.length ? (
-          <span className="wk-link">
-            {lt.map((t, i) => (
-              <span key={t.id}>
-                {i ? ', ' : ''}
-                <IconLink />
-                {t.title}
-                <DueAlertInline t={t} />
-              </span>
-            ))}
-          </span>
-        ) : null}
+        <WkLinks tasks={lt} />
       </button>
     </div>
   )
@@ -190,8 +194,9 @@ function Week({ today }: { today: string }) {
   )
 }
 
-const ROTINA_DAYS = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
-const HOUR_PX = 48
+const ROTINA_DAYS = ['seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom']
+const HOUR_PX = 64
+const SHORT_PX = 56 // abaixo disso o card cabe em uma linha só
 
 const rotinaDay = (e: CalEvent) => (parseYmd(e.origin || e.date).getDay() + 6) % 7
 const toMin = (t: string) => {
@@ -222,7 +227,7 @@ function placeDay(evs: CalEvent[]): Placed[] {
     .map((e) => {
       const s = toMin(e.start)
       const end = e.end ? toMin(e.end) : 0
-      const f = Math.min(1440, end > s ? Math.max(end, s + 30) : s + 60)
+      const f = Math.min(1440, e.end ? (end > s ? Math.max(end, s + 30) : 1440) : s + 60)
       return { e, s, f, col: 0, cols: 1 }
     })
     .sort((a, b) => a.s - b.s || a.f - b.f)
@@ -247,21 +252,33 @@ function placeDay(evs: CalEvent[]): Placed[] {
   return items
 }
 
-function RotinaChip({ e }: { e: CalEvent }) {
+function RotinaCard({ e, style, short }: { e: CalEvent; style?: CSSProperties; short?: boolean }) {
   const { openDialog } = useApp()
   return (
     <button
       type="button"
-      className="rt-ev"
+      className={`rt-card${style ? ' rt-block' : ''}${short ? ' short' : ''}`}
+      style={style}
       onClick={() => openDialog({ kind: 'event', id: e.id })}
     >
+      <span className="wk-time">
+        {e.allDay ? (
+          'Dia inteiro'
+        ) : (
+          <>
+            {e.start}
+            {e.end ? <span className="wk-end">{e.end}</span> : null}
+          </>
+        )}
+      </span>
       <span className="wk-title">{e.title}</span>
     </button>
   )
 }
 
 function Rotina() {
-  const { state, openDialog } = useApp()
+  const { state } = useApp()
+  const todayIdx = (new Date().getDay() + 6) % 7
   const reps = (state.events || []).filter((e) => e.date && isRepeating(e))
   const daily = reps.filter((e) => e.repeat === 'daily')
   const weekly = reps.filter((e) => e.repeat === 'weekly')
@@ -270,74 +287,81 @@ function Rotina() {
   )
   const timed = perDay.map((evs) => placeDay(evs.filter((e) => !e.allDay)))
   const all = timed.flat()
-  const lo = Math.min(8, all.length ? Math.floor(Math.min(...all.map((p) => p.s)) / 60) : 8)
-  const hi = Math.max(18, all.length ? Math.ceil(Math.max(...all.map((p) => p.f)) / 60) : 18)
+  // das 6h às 22h, ampliando só se algum compromisso ficar fora dessa janela
+  const lo = all.length ? Math.min(6, Math.floor(Math.min(...all.map((p) => p.s)) / 60)) : 6
+  const hi = all.length ? Math.max(22, Math.ceil(Math.max(...all.map((p) => p.f)) / 60)) : 22
   const hours = Array.from({ length: hi - lo }, (_, i) => lo + i)
   const hasAllDay = perDay.some((evs) => evs.some((e) => e.allDay))
+  if (!reps.length)
+    return (
+      <p className="wk-empty">
+        Nenhum compromisso recorrente ainda. Ao criar um compromisso, escolha Todo dia ou Toda semana
+        em Repetir e ele aparece aqui.
+      </p>
+    )
   return (
-    <div className="rt-scroll">
-      <div className="rt-grid">
-        <div className="rt-row rt-headrow">
-          <div />
-          {ROTINA_DAYS.map((name) => (
-            <div key={name} className="rt-dayname">
-              {name}
-            </div>
-          ))}
-        </div>
-        {hasAllDay ? (
-          <div className="rt-row rt-allday">
-            <div className="rt-gutter">Dia inteiro</div>
-            {perDay.map((evs, i) => (
-              <div key={i} className="rt-cell">
-                {evs
-                  .filter((e) => e.allDay)
-                  .map((e) => (
-                    <RotinaChip key={e.id} e={e} />
-                  ))}
+    <>
+      <p className="sub rt-note">Seus compromissos que se repetem, em uma semana-modelo.</p>
+      <div className="rt-scroll">
+        <div className="rt-grid">
+          <div className="rt-row rt-headrow">
+            <div />
+            {ROTINA_DAYS.map((name, i) => (
+              <div key={name} className={`rt-dayname${i === todayIdx ? ' today' : ''}`}>
+                {name}
               </div>
             ))}
           </div>
-        ) : null}
-        <div className="rt-row rt-body">
-          <div className="rt-hours">
-            {hours.map((h) => (
-              <div key={h} className="rt-hour" style={{ height: HOUR_PX }}>
-                <span>{`${pad2(h)}:00`}</span>
-              </div>
-            ))}
-          </div>
-          {timed.map((placed, i) => (
-            <div
-              key={i}
-              className="rt-col"
-              style={{ height: hours.length * HOUR_PX, backgroundSize: `100% ${HOUR_PX}px` }}
-            >
-              {placed.map((p) => (
-                <button
-                  key={p.e.id}
-                  type="button"
-                  className="rt-block"
-                  style={{
-                    top: ((p.s - lo * 60) / 60) * HOUR_PX,
-                    height: Math.max(20, ((p.f - p.s) / 60) * HOUR_PX - 2),
-                    left: `${(p.col / p.cols) * 100}%`,
-                    width: `calc(${100 / p.cols}% - 2px)`,
-                  }}
-                  onClick={() => openDialog({ kind: 'event', id: p.e.id })}
-                >
-                  <span className="wk-time">
-                    {p.e.start}
-                    {p.e.end ? ` – ${p.e.end}` : ''}
-                  </span>
-                  <span className="wk-title">{p.e.title}</span>
-                </button>
+          {hasAllDay ? (
+            <div className="rt-row rt-allday">
+              <div className="rt-gutter">Dia inteiro</div>
+              {perDay.map((evs, i) => (
+                <div key={i} className="rt-cell">
+                  {evs
+                    .filter((e) => e.allDay)
+                    .map((e) => (
+                      <RotinaCard key={e.id} e={e} />
+                    ))}
+                </div>
               ))}
             </div>
-          ))}
+          ) : null}
+          <div className="rt-row rt-body">
+            <div className="rt-hours">
+              {hours.map((h) => (
+                <div key={h} className="rt-hour" style={{ height: HOUR_PX }}>
+                  <span>{`${pad2(h)}:00`}</span>
+                </div>
+              ))}
+              <div className="rt-hour rt-hour-end">
+                <span>{`${pad2(hi)}:00`}</span>
+              </div>
+            </div>
+            {timed.map((placed, i) => (
+              <div
+                key={i}
+                className={`rt-col${i === todayIdx ? ' today' : ''}`}
+                style={{ height: hours.length * HOUR_PX, backgroundSize: `100% ${HOUR_PX}px` }}
+              >
+                {placed.map((p) => (
+                  <RotinaCard
+                    key={p.e.id}
+                    e={p.e}
+                    short={((p.f - p.s) / 60) * HOUR_PX < SHORT_PX}
+                    style={{
+                      top: ((p.s - lo * 60) / 60) * HOUR_PX,
+                      height: Math.max(30, ((p.f - p.s) / 60) * HOUR_PX - 2),
+                      left: `${(p.col / p.cols) * 100}%`,
+                      width: `calc(${100 / p.cols}% - 2px)`,
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 
