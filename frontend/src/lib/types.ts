@@ -1,5 +1,5 @@
 export type QuadId = 'fazer' | 'agendar' | 'delegar' | 'eliminar'
-export type Repeat = 'none' | 'daily' | 'weekly'
+export type Repeat = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type ListId = 'indicacoes' | 'hobbies'
 export type KindId = 'filme' | 'serie' | 'livro' | 'outro'
 

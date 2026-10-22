@@ -127,6 +127,18 @@ describe('occursOn', () => {
     expect(occursOn(e, '2026-10-28')).toBe(true)
     expect(occursOn(e, '2026-10-27')).toBe(false)
   })
+  it('mensal em dia 31 cai no último dia dos meses curtos', () => {
+    const e = ev({ repeat: 'monthly', date: '2026-01-31', origin: '2026-01-31' })
+    expect(occursOn(e, '2026-02-28')).toBe(true)
+    expect(occursOn(e, '2026-03-31')).toBe(true)
+    expect(occursOn(e, '2026-03-30')).toBe(false)
+  })
+  it('anual de 29/02 cai em 28/02 fora de ano bissexto', () => {
+    const e = ev({ repeat: 'yearly', date: '2024-02-29', origin: '2024-02-29' })
+    expect(occursOn(e, '2027-02-28')).toBe(true)
+    expect(occursOn(e, '2028-02-29')).toBe(true)
+    expect(occursOn(e, '2028-02-28')).toBe(false)
+  })
 })
 
 describe('eventsOn', () => {
@@ -234,21 +246,6 @@ describe('normalize', () => {
       { type: 'interval', every: 30, unit: 'days' },
       { type: 'interval', every: 14, unit: 'days' },
       { type: 'interval', every: 2, unit: 'days' },
-    ])
-  })
-  it('compromissos mensais e anuais antigos viram únicos, na mesma data', () => {
-    const s = fresh()
-    const d = '2026-11-02'
-    s.events = [
-      ev({ id: 'm', repeat: 'monthly' as CalEvent['repeat'], date: d, origin: d }),
-      ev({ id: 'y', repeat: 'yearly' as CalEvent['repeat'], date: d, origin: d }),
-      ev({ id: 'w', repeat: 'weekly', date: d, origin: d }),
-    ]
-    expect(normalize(s, NOW)).toBe(true)
-    expect(s.events.map((e) => [e.id, e.repeat, e.date])).toEqual([
-      ['m', 'none', d],
-      ['y', 'none', d],
-      ['w', 'weekly', d],
     ])
   })
   it('solta o vínculo de tarefa com compromisso que não existe mais', () => {

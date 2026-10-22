@@ -252,7 +252,24 @@ function placeDay(evs: CalEvent[]): Placed[] {
   return items
 }
 
-function RotinaCard({ e, style, short }: { e: CalEvent; style?: CSSProperties; short?: boolean }) {
+function rotinaWhen(e: CalEvent) {
+  const d = parseYmd(e.origin || e.date)
+  return e.repeat === 'monthly'
+    ? `Todo dia ${d.getDate()}`
+    : `Todo ${d.getDate()} de ${d.toLocaleDateString('pt-BR', { month: 'long' })}`
+}
+
+function RotinaCard({
+  e,
+  style,
+  short,
+  when,
+}: {
+  e: CalEvent
+  style?: CSSProperties
+  short?: boolean
+  when?: string
+}) {
   const { openDialog } = useApp()
   return (
     <button
@@ -262,7 +279,9 @@ function RotinaCard({ e, style, short }: { e: CalEvent; style?: CSSProperties; s
       onClick={() => openDialog({ kind: 'event', id: e.id })}
     >
       <span className="wk-time">
-        {e.allDay ? (
+        {when ? (
+          when
+        ) : e.allDay ? (
           'Dia inteiro'
         ) : (
           <>
@@ -282,6 +301,7 @@ function Rotina() {
   const reps = (state.events || []).filter((e) => e.date && isRepeating(e))
   const daily = reps.filter((e) => e.repeat === 'daily')
   const weekly = reps.filter((e) => e.repeat === 'weekly')
+  const others = reps.filter((e) => e.repeat === 'monthly' || e.repeat === 'yearly').sort(rotinaSort)
   const perDay = ROTINA_DAYS.map((_, i) =>
     [...daily, ...weekly.filter((e) => rotinaDay(e) === i)].sort(rotinaSort),
   )
@@ -361,6 +381,18 @@ function Rotina() {
           </div>
         </div>
       </div>
+      <section className="rt-other">
+        <h2>Mensais e anuais</h2>
+        {others.length ? (
+          <div className="rt-other-list">
+            {others.map((e) => (
+              <RotinaCard key={e.id} e={e} when={rotinaWhen(e)} />
+            ))}
+          </div>
+        ) : (
+          <p className="wk-empty">Nenhum compromisso mensal ou anual.</p>
+        )}
+      </section>
     </>
   )
 }
