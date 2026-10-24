@@ -28,6 +28,14 @@ export const LISTS: ListDef[] = [
     empty: 'Nenhum hobby na lista ainda.',
     done: 'Hobby concluído',
   },
+  {
+    id: 'compras',
+    title: 'Compras',
+    tab: 'Compras',
+    ph: 'Adicionar item…',
+    empty: 'Nada na lista de compras ainda.',
+    done: 'Compra concluída',
+  },
 ]
 
 export const KINDS: Record<KindId, { label: string; emoji: string }> = {

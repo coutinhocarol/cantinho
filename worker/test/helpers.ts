@@ -147,6 +147,7 @@ export const sampleState = () => ({
   lists: {
     indicacoes: [{ id: 'i1', title: 'Parasita', kind: 'filme', note: 'Netflix', createdAt: 1729000000002 }],
     hobbies: [{ id: 'h1', title: 'Cerâmica', createdAt: 1729000000001 }],
+    compras: [],
   },
   missed: [
     {

@@ -569,14 +569,18 @@ describe('Coisinhas', () => {
     expect(store.getState().lists.indicacoes).toEqual([])
   })
 
-  it('não existe mais a lista de Compras', async () => {
-    const { user } = setup()
+  it('tem a lista de Compras', async () => {
+    const { user, store } = setup()
     await goTo(user, 'Coisinhas')
-    expect(screen.queryByRole('button', { name: 'Compras' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent)).toEqual([
       'Indicações',
       'Hobbies para testar',
+      'Compras',
     ])
+    await user.click(screen.getByRole('button', { name: 'Compras' }))
+    const input = document.querySelector('.list-card.active input') as HTMLInputElement
+    await user.type(input, 'Leite{Enter}')
+    expect(store.getState().lists.compras.map((i) => i.title)).toEqual(['Leite'])
   })
 })
 

@@ -105,7 +105,7 @@ describe('isolamento entre usuários', () => {
     other.areas = [{ ...other.areas[0], name: 'Área da Bia' }]
     other.tasks = []
     other.events = []
-    other.lists = { indicacoes: [], hobbies: [] }
+    other.lists = { indicacoes: [], hobbies: [], compras: [] }
     other.missed = []
     expect((await bia.put('/api/state', other)).status).toBe(200)
 

@@ -9,7 +9,7 @@ import type { AppStateInput, AreaInput, EventInput } from './schemas'
 
 export class StateError extends Error {}
 
-const LIST_NAMES = ['indicacoes', 'hobbies'] as const
+const LIST_NAMES = ['indicacoes', 'hobbies', 'compras'] as const
 
 // ---------- conversões ----------
 const ts = (ms: number | null | undefined) => (ms == null ? null : new Date(ms))
@@ -237,7 +237,11 @@ export async function loadState(tx: Sql, userId: string) {
   const done = new Map<string, string[]>()
   for (const d of doneDates) done.set(d.event_id, [...(done.get(d.event_id) ?? []), d.d])
 
-  const lists: Record<string, Record<string, unknown>[]> = { indicacoes: [], hobbies: [] }
+  const lists: Record<string, Record<string, unknown>[]> = {
+    indicacoes: [],
+    hobbies: [],
+    compras: [],
+  }
   for (const i of items) {
     lists[i.list_name]?.push({
       id: i.id,

@@ -74,13 +74,13 @@ describe('/api/state', () => {
     expect(t).toEqual({ area_id: 'a1', event_id: 'e1' })
   })
 
-  it('linhas da lista de compras (que saiu do app) não são lidas nem apagadas', async () => {
+  it('linhas antigas da lista de compras voltam a ser lidas e preservadas', async () => {
     await client.put('/api/state', sampleState())
     await db.run(
       (t) => t`insert into list_items (user_id, id, list_name, title) select user_id, 'velho', 'compras', 'Leite' from list_items limit 1`,
     )
     const saved = (await client.get('/api/state')).body
-    expect(saved.lists.compras).toBeUndefined()
+    expect(saved.lists.compras.map((i: any) => i.title)).toEqual(['Leite'])
     expect(saved.lists.hobbies).toHaveLength(1)
     await client.put('/api/state', saved)
     expect(await count('list_items')).toBe(3)

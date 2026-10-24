@@ -261,7 +261,7 @@ describe('normalize', () => {
     ;(s as Partial<AppState>).lists = undefined
     ;(s as Partial<AppState>).events = undefined
     normalize(s, NOW)
-    expect(s.lists).toEqual({ indicacoes: [], hobbies: [] })
+    expect(s.lists).toEqual({ indicacoes: [], hobbies: [], compras: [] })
     expect(s.missed).toEqual([])
     expect(s.events).toEqual([])
   })

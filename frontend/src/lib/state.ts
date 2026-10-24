@@ -2,7 +2,7 @@ import type { AppState, ListId, Period } from './types'
 import { pruneEvents, eventById } from './events'
 import { clamp, ymd } from './time'
 
-const LIST_IDS: ListId[] = ['indicacoes', 'hobbies']
+const LIST_IDS: ListId[] = ['indicacoes', 'hobbies', 'compras']
 
 export const emptyState = (): AppState => ({
   v: 1,
@@ -10,7 +10,7 @@ export const emptyState = (): AppState => ({
   tasks: [],
   events: [],
   water: { goal: 10, date: '', count: 0, v2: true },
-  lists: { indicacoes: [], hobbies: [] },
+  lists: { indicacoes: [], hobbies: [], compras: [] },
   missed: [],
   reprioDate: '',
 })

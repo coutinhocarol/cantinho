@@ -94,8 +94,9 @@ export const AppStateSchema = z.object({
     .object({
       indicacoes: list(ListItem),
       hobbies: list(ListItem),
+      compras: list(ListItem),
     })
-    .default({ indicacoes: [], hobbies: [] }),
+    .default({ indicacoes: [], hobbies: [], compras: [] }),
   missed: list(MissedEvent),
   reprioDate: z.string().nullish(),
 })
