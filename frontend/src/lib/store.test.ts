@@ -3,7 +3,6 @@ import type { StateApi } from './api'
 import { emptyState } from './state'
 import { LS_KEY, Store, stable } from './store'
 import type { AppState, Area } from './types'
-import { ymd } from './time'
 
 const NOW = new Date(2026, 9, 21, 12, 0, 0)
 
@@ -17,11 +16,6 @@ const area = (id: string, name = id): Area => ({
   createdAt: NOW.getTime(),
   order: 0,
 })
-
-const today = (s: AppState): AppState => {
-  s.water = { goal: 10, date: ymd(NOW), count: 0, v2: true }
-  return s
-}
 
 function fakeApi(remote: AppState | null = null) {
   const api = {
@@ -44,7 +38,7 @@ afterEach(() => vi.useRealTimers())
 
 describe('Store', () => {
   it('carrega o que está salvo no aparelho', () => {
-    const s = today(emptyState())
+    const s = emptyState()
     s.areas = [area('a')]
     seedLocal(s)
     const store = new Store({ api: fakeApi() })
@@ -90,7 +84,7 @@ describe('Store', () => {
   })
 
   it('conta vazia + dados no aparelho: envia o que existe aqui', async () => {
-    const s = today(emptyState())
+    const s = emptyState()
     s.areas = [area('a')]
     seedLocal(s)
     const api = fakeApi(null)
@@ -101,7 +95,7 @@ describe('Store', () => {
   })
 
   it('aparelho vazio: adota o estado da conta', async () => {
-    const remote = today(emptyState())
+    const remote = emptyState()
     remote.areas = [area('r')]
     const store = new Store({ api: fakeApi(remote) })
     await store.connect()
@@ -109,10 +103,10 @@ describe('Store', () => {
   })
 
   it('primeira conexão com dados dos dois lados: junta e envia o resultado', async () => {
-    const local = today(emptyState())
+    const local = emptyState()
     local.areas = [area('l')]
     seedLocal(local)
-    const remote = today(emptyState())
+    const remote = emptyState()
     remote.areas = [area('r')]
     const api = fakeApi(remote)
     const store = new Store({ api, debounceMs: 10 })
@@ -124,10 +118,10 @@ describe('Store', () => {
 
   it('depois de sincronizado uma vez, a conta manda (sem juntar de novo)', async () => {
     localStorage.setItem('cantinho-synced-v1', '1')
-    const local = today(emptyState())
+    const local = emptyState()
     local.areas = [area('l')]
     seedLocal(local)
-    const remote = today(emptyState())
+    const remote = emptyState()
     remote.areas = [area('r')]
     const store = new Store({ api: fakeApi(remote) })
     await store.connect()
@@ -135,7 +129,7 @@ describe('Store', () => {
   })
 
   it('pull traz mudanças feitas em outro aparelho', async () => {
-    const remote = today(emptyState())
+    const remote = emptyState()
     remote.areas = [area('r')]
     const api = fakeApi(remote)
     const store = new Store({ api })
@@ -146,7 +140,7 @@ describe('Store', () => {
   })
 
   it('pull não atropela uma gravação pendente', async () => {
-    const remote = today(emptyState())
+    const remote = emptyState()
     remote.areas = [area('r')]
     const api = fakeApi(remote)
     const store = new Store({ api })
@@ -193,11 +187,14 @@ describe('Store', () => {
 
   it('refresh só grava quando a data virou', () => {
     const s = emptyState()
-    s.water = { goal: 10, date: '2026-10-20', count: 3, v2: true }
+    s.events.push({
+      id: 'e', title: 'Dentista', date: '2026-10-20', origin: '2026-10-20', allDay: true,
+      start: '', end: '', repeat: 'none', notes: '', doneDates: [], createdAt: 1,
+    })
     seedLocal(s)
     const store = new Store({ api: fakeApi() })
     // o carregamento já faz a virada do dia
-    expect(store.getState().water).toMatchObject({ date: '2026-10-21', count: 0 })
+    expect(store.getState().missed).toHaveLength(1)
     const listener = vi.fn()
     store.subscribe(listener)
     store.refresh()

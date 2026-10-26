@@ -57,7 +57,6 @@ function mockServer(auth: { current: User | null }, saved: Record<string, AppSta
 
 const stateWithArea = (name: string): AppState => {
   const s = emptyState()
-  s.water = { goal: 10, date: new Date().toISOString().slice(0, 10), count: 0, v2: true }
   s.areas.push({
     id: 'a-' + name,
     name,

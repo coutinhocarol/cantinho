@@ -1,6 +1,5 @@
 import { areaById, areaStatus } from './areas'
 import type { Store } from './store'
-import { waterCount, waterGoal } from './state'
 import type { Area, AppState, CalEvent, ListId, ListItem, Task } from './types'
 import { DAY, fmtDayMonth, fmtWhen, parseYmd, uid, ymd } from './time'
 
@@ -13,7 +12,6 @@ export interface Actions {
   moveEvent(id: string, fromKey: string, toKey: string, onMoved?: (toKey: string) => void): void
   addListItem(list: ListId, title: string): void
   doneListItem(list: ListId, itemId: string, msg: string): void
-  setWater(i: number): void
   confirmMissed(id: string): void
   doneReprio(): void
   forceAll(): void
@@ -186,17 +184,6 @@ export function createActions(store: Store, toast: ToastFn): Actions {
           d.reprioDate = prev
         }),
       )
-    },
-
-    setWater(i) {
-      const s = get()
-      const cur = waterCount(s)
-      const goal = waterGoal(s)
-      commit((d) => {
-        d.water.date = ymd(new Date())
-        d.water.goal = goal
-        d.water.count = i <= cur ? i - 1 : i
-      })
     },
 
     forceAll() {

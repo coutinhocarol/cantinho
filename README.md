@@ -26,7 +26,7 @@ promessa guiou todas as decisões do produto.
 
 | Aba            | Para que serve                                                                                                                                                                                       |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Bora**       | A tela do dia: compromissos de hoje, água, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado.                                                              |
+| **Bora**       | A tela do dia: compromissos de hoje, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado.                                                              |
 | **Tarefas**    | Por área da vida ou na **matriz de priorização** (Fazer, Agendar, Simplificar, Eliminar), com arrastar e soltar.                                                                                     |
 | **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso.                                                                                     |
 | **Áreas**      | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Quando o prazo vence, a área aparece na Bora para ser checada. |
@@ -52,7 +52,7 @@ Bora). Cada lacuna virou uma regra:
 - **Revisão diária obrigatória.** Repriorizar as tarefas na matriz é uma pendência que volta todo
   dia na Bora.
 - **A mensagem "Tudo certo por hoje" é honesta.** Só aparece quando compromissos, áreas, tarefas,
-  revisões e água estão em dia.
+  e revisões estão em dia.
 - **O que está pendente continua pendente.** A Bora é calculada a partir da data de hoje: ficar
   dias sem abrir o app não perde nada, e a área mostra "pendente há 6 dias".
 - **Consistência de interface.** Revisei botões e textos para que a mesma ação tenha o mesmo nome e o

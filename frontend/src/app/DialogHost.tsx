@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { AreaDialog } from '../dialogs/AreaDialog'
 import { EventDialog } from '../dialogs/EventDialog'
-import { ListItemDialog, MoveDialog, ScheduleDialog, WaterGoalDialog } from '../dialogs/SmallDialogs'
+import { ListItemDialog, MoveDialog, ScheduleDialog } from '../dialogs/SmallDialogs'
 import { TaskDialog } from '../dialogs/TaskDialog'
 import { useApp } from './context'
 
@@ -17,8 +17,6 @@ function Content() {
       return <EventDialog id={dialog.id} dateKey={dialog.dateKey} opts={dialog.opts} />
     case 'listItem':
       return <ListItemDialog list={dialog.list} id={dialog.id} />
-    case 'waterGoal':
-      return <WaterGoalDialog />
     case 'schedule':
       return <ScheduleDialog taskId={dialog.taskId} />
     case 'move':

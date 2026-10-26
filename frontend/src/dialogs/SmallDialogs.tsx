@@ -1,10 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { IconPlus } from '../components/icons'
 import { QUADS } from '../lib/areas'
 import { eventById, isLinked } from '../lib/events'
 import { KINDS, LISTS } from '../lib/lists'
-import { clampGoal, waterCount, waterGoal } from '../lib/state'
 import type { KindId, ListId, QuadId } from '../lib/types'
 import { fmtDayMonth, parseYmd, ymd } from '../lib/time'
 
@@ -112,59 +111,6 @@ export function ListItemDialog({ list, id }: { list: ListId; id: string }) {
         <button type="button" className="btn danger" data-dact="delete" onClick={remove}>
           {delArm ? 'Toque de novo para excluir' : 'Excluir'}
         </button>
-        <span className="spacer"></span>
-        <button type="button" className="btn ghost" data-dact="cancel" onClick={closeDialog}>
-          Cancelar
-        </button>
-        <button type="button" className="btn primary" data-dact="save" onClick={save}>
-          Salvar
-        </button>
-      </div>
-    </div>
-  )
-}
-
-/* ---------------- meta de água ---------------- */
-export function WaterGoalDialog() {
-  const { state, commit, closeDialog } = useApp()
-  const [goal, setGoal] = useState(String(waterGoal(state)))
-  const ref = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    const t = setTimeout(() => {
-      ref.current?.focus()
-      ref.current?.select()
-    }, 30)
-    return () => clearTimeout(t)
-  }, [])
-  const save = () => {
-    const g = clampGoal(parseInt(goal) || 10)
-    const c = waterCount(state)
-    commit((d) => {
-      d.water = { goal: g, date: ymd(new Date()), count: Math.min(c, g), v2: true }
-    })
-    closeDialog()
-  }
-  return (
-    <div className="dlg">
-      <h2>Meta de água</h2>
-      <div>
-        <label className="lbl" htmlFor="w-goal">
-          Quantos copos por dia?
-        </label>
-        <input
-          className="field"
-          id="w-goal"
-          ref={ref}
-          type="number"
-          inputMode="numeric"
-          min="1"
-          max="30"
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-        />
-      </div>
-      <p className="sub tw:m-0 tw:text-[13px]">Cada copo tem 250 ml. A contagem volta a zero todo dia.</p>
-      <div className="dlg-foot">
         <span className="spacer"></span>
         <button type="button" className="btn ghost" data-dact="cancel" onClick={closeDialog}>
           Cancelar

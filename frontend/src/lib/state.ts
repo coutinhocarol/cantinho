@@ -1,6 +1,5 @@
 import type { AppState, ListId, Period } from './types'
 import { pruneEvents, eventById } from './events'
-import { clamp, ymd } from './time'
 
 const LIST_IDS: ListId[] = ['indicacoes', 'hobbies', 'compras']
 
@@ -9,16 +8,10 @@ export const emptyState = (): AppState => ({
   areas: [],
   tasks: [],
   events: [],
-  water: { goal: 10, date: '', count: 0, v2: true },
   lists: { indicacoes: [], hobbies: [], compras: [] },
   missed: [],
   reprioDate: '',
 })
-
-export const waterGoal = (s: AppState) => Math.max(1, (s.water && s.water.goal) || 10)
-export const waterCount = (s: AppState, now = new Date()) =>
-  s.water && s.water.date === ymd(now) ? Math.min(s.water.count || 0, waterGoal(s)) : 0
-export const clampGoal = (n: number) => clamp(n, 1, 30)
 
 /**
  * Corrige dados antigos/inconsistentes e faz a "virada do dia".
@@ -33,20 +26,6 @@ export function normalize(s: AppState, now = new Date()): boolean {
   })
   if (!Array.isArray(s.missed)) s.missed = []
   if (typeof s.reprioDate !== 'string') s.reprioDate = ''
-  if (!s.water || typeof s.water !== 'object') s.water = { goal: 10, date: '', count: 0, v2: true }
-  if (!s.water.v2) {
-    s.water.goal = 10
-    s.water.v2 = true
-    ch = true
-  }
-  {
-    const tk = ymd(now)
-    if (s.water.date !== tk) {
-      s.water.date = tk
-      s.water.count = 0
-      ch = true
-    }
-  }
   const before = s.events.length
   s.events = s.events.filter(
     (e) => !((!e.repeat || e.repeat === 'none') && (e.doneDates || []).includes(e.date)),

@@ -164,11 +164,6 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   await tx`insert into user_state (user_id, reprio_day) values (${userId}, ${isoDate(st.reprioDate)})
     on conflict (user_id) do update set reprio_day = excluded.reprio_day`
 
-  // água
-  const goal = Math.max(1, Math.min(30, Math.trunc(st.water.goal)))
-  await tx`insert into water (user_id, goal, day, count)
-    values (${userId}, ${goal}, ${isoDate(st.water.date)}, ${Math.max(0, Math.trunc(st.water.count))})
-    on conflict (user_id) do update set goal = excluded.goal, day = excluded.day, count = excluded.count`
 }
 
 function eventRow(userId: string, e: EventInput) {
@@ -200,10 +195,6 @@ const round = (v: number | null) => (v == null ? null : Math.round(v))
 
 /** Estado completo no formato do app, ou `null` se nada foi salvo ainda. */
 export async function loadState(tx: Sql, userId: string) {
-  const [water] = await tx<{ goal: number; day: string | null; count: number }[]>`
-    select goal, ${tx.unsafe(iso('day'))} as day, count from water where user_id = ${userId}`
-  if (!water) return null
-
   const [areas, checks, tasks, events, doneDates, items, missed, [userState]] = await Promise.all([
     tx<Record<string, any>[]>`select id, name, emoji, period_type, interval_days,
         to_json(weekly_days) as weekly_days, ${tx.unsafe(hhmm('weekly_time'))} as weekly_time,
@@ -231,6 +222,7 @@ export async function loadState(tx: Sql, userId: string) {
     tx<{ reprio_day: string | null }[]>`select ${tx.unsafe(iso('reprio_day'))} as reprio_day
       from user_state where user_id = ${userId}`,
   ])
+  if (!userState) return null
 
   const history = new Map<string, number[]>()
   for (const c of checks) history.set(c.area_id, [...(history.get(c.area_id) ?? []), Math.round(c.at)])
@@ -292,7 +284,6 @@ export async function loadState(tx: Sql, userId: string) {
       doneDates: done.get(e.id) ?? [],
       createdAt: round(e.created_at),
     })),
-    water: { goal: water.goal, date: water.day ?? '', count: water.count, v2: true },
     lists,
     missed: missed.map((m) => ({
       id: m.id,

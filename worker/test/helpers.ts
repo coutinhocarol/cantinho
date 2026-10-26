@@ -143,7 +143,6 @@ export const sampleState = () => ({
       notes: 'sem trabalho', origin: '2026-11-02', createdAt: 1729300000000,
     },
   ],
-  water: { goal: 8, date: '2026-10-19', count: 3, v2: true },
   lists: {
     indicacoes: [{ id: 'i1', title: 'Parasita', kind: 'filme', note: 'Netflix', createdAt: 1729000000002 }],
     hobbies: [{ id: 'h1', title: 'Cerâmica', createdAt: 1729000000001 }],

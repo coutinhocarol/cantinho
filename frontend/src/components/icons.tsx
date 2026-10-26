@@ -42,14 +42,6 @@ export const IconGrip = () => (
   </svg>
 )
 
-/** Copo de água (cheio ou vazio). */
-export const Glass = ({ on }: { on: boolean }) => (
-  <svg viewBox="0 0 24 28" aria-hidden="true">
-    {on && <path className="wf" d="M4.65 11h14.7l-1.05 13a2.2 2.2 0 0 1-2.2 2H7.9a2.2 2.2 0 0 1-2.2-2L4.65 11z" />}
-    <path className="go" d="M4 3h16l-1.7 21a2.2 2.2 0 0 1-2.2 2H7.9a2.2 2.2 0 0 1-2.2-2L4 3z" />
-  </svg>
-)
-
 /** Florzinha da marca (usa o <symbol id="flower"> do index.html). */
 const FlowerUse = () => (
   <svg viewBox="0 0 24 24">

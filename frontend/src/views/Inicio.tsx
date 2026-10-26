@@ -1,10 +1,9 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
-import { Flower, Glass, IconCheck, IconNote } from '../components/icons'
+import { Flower, IconCheck, IconNote } from '../components/icons'
 import { LinkedTasks, TaskTags } from '../components/taskParts'
 import { acceptsTasks, areaById, areaStatus, sortedAreas } from '../lib/areas'
 import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
-import { waterCount, waterGoal } from '../lib/state'
 import { organizeTasks, pendingTasks } from '../lib/tasks'
 import type { Area, AreaStatus, MissedEvent, Task } from '../lib/types'
 import { capitalize, fmtDayMonth, parseYmd, rel, ymd } from '../lib/time'
@@ -188,8 +187,6 @@ export function Inicio() {
   })
   const hr = new Date().getHours()
   const hi = hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite'
-  const goal = waterGoal(state)
-  const count = waterCount(state)
 
   let tasksNode: ReactNode
   if (!pend.length) tasksNode = <p className="sub">Nenhuma tarefa pendente.</p>
@@ -219,8 +216,7 @@ export function Inicio() {
     !pend.length &&
     !org.length &&
     !missed.length &&
-    !reprioPending &&
-    goal - count <= 0
+    !reprioPending
 
   const areasNode = !state.areas.length ? (
     <div className="empty">
@@ -298,7 +294,7 @@ export function Inicio() {
             <div className="empty all-ok">
               <Flower className="flower g" />
               <strong>Tudo certo por hoje</strong>
-              <p>Água, compromissos, tarefas e áreas estão em dia.</p>
+              <p>Compromissos, tarefas e áreas estão em dia.</p>
             </div>
           ) : (
             <div className="home-grid">
@@ -309,38 +305,6 @@ export function Inicio() {
                   <InfoButton text="Mostra os compromissos que acontecem hoje e ainda não foram marcados como feitos. As tarefas ligadas a cada um aparecem embaixo dele. Os de amanhã em diante ficam só no Calendário." />
                 </div>
                 {evNode}
-              </div>
-              <div className="water-sec">
-                <div className="sec-head">
-                  <h2>Água de hoje</h2>
-                  <Count n={goal - count} />
-                  <InfoButton text="Meta diária de copos (250 ml cada). O número mostra quantos copos faltam e a contagem volta a zero todo dia. Toque em Meta para mudar a quantidade." />
-                </div>
-                <div className="water">
-                  <div className="water-head">
-                    <button
-                      type="button"
-                      className="btn water-goal"
-                      onClick={() => openDialog({ kind: 'waterGoal' })}
-                    >
-                      {`Meta (${(Math.round(goal * 250) / 1000).toLocaleString('pt-BR')} L)`}
-                    </button>
-                  </div>
-                  <div className={`glasses${goal > 12 ? ' many' : ''}`}>
-                    {Array.from({ length: goal }, (_, k) => (
-                      <button
-                        key={k}
-                        type="button"
-                        className={`glass${k < count ? ' on' : ''}`}
-                        aria-pressed={k < count}
-                        aria-label={`Copo ${k + 1} de ${goal}`}
-                        onClick={() => actions.setWater(k + 1)}
-                      >
-                        <Glass on={k < count} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
               {missed.length ? (
                 <div className="missed-sec">

@@ -34,7 +34,6 @@ const task = (id: string, title: string, areaId: string, over: Partial<Task> = {
 
 function setup(seed?: (s: AppState) => void) {
   const s = emptyState()
-  s.water = { goal: 10, date: ymd(new Date()), count: 0, v2: true }
   seed?.(s)
   localStorage.setItem(LS_KEY, JSON.stringify(s))
   const api: StateApi = { load: vi.fn(async () => null), save: vi.fn(async () => {}) }
@@ -60,7 +59,7 @@ describe('Início (Bora)', () => {
   it('mostra o cumprimento e as seções do dia', () => {
     setup((s) => void s.areas.push(area('a', 'Quarto', { lastDone: null })))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^(Bom dia|Boa tarde|Boa noite)!$/)
-    for (const h of ['Compromissos de hoje', 'Água de hoje', 'Áreas a checar', 'Tarefas pendentes', 'Tarefas a organizar'])
+    for (const h of ['Compromissos de hoje', 'Áreas a checar', 'Tarefas pendentes', 'Tarefas a organizar'])
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
   })
 
@@ -70,7 +69,7 @@ describe('Início (Bora)', () => {
     await user.click(screen.getByRole('button', { name: 'Checar Quarto' }))
     expect(store.getState().areas[0].lastDone).not.toBeNull()
     expect(screen.getByText(/Quarto checada às/)).toBeInTheDocument()
-    expect(screen.getByText('Todas as áreas estão em dia.')).toBeInTheDocument()
+    expect(screen.getByText('Tudo certo por hoje')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Desfazer' }))
     expect(store.getState().areas[0].lastDone).toBeNull()
     expect(screen.getByText('Ainda não checada')).toBeInTheDocument()
@@ -112,31 +111,9 @@ describe('Início (Bora)', () => {
     expect(store.getState().tasks.map((t) => t.title)).toEqual(['Lavar roupa'])
   })
 
-  it('água: clicar no copo N enche até N; clicar no último cheio esvazia um', async () => {
-    const { user, store } = setup((s) => void s.areas.push(area('a', 'Quarto')))
-    await user.click(screen.getByRole('button', { name: 'Copo 3 de 10' }))
-    expect(store.getState().water.count).toBe(3)
-    expect(screen.getByRole('button', { name: 'Copo 3 de 10' })).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Copo 4 de 10' })).toHaveAttribute('aria-pressed', 'false')
-    await user.click(screen.getByRole('button', { name: 'Copo 3 de 10' }))
-    expect(store.getState().water.count).toBe(2)
-  })
-
-  it('meta de água: valida entre 1 e 30', async () => {
-    const { user, store } = setup((s) => void s.areas.push(area('a', 'Quarto')))
-    await user.click(screen.getByRole('button', { name: /Meta \(2,5 L\)/ }))
-    const input = screen.getByLabelText('Quantos copos por dia?')
-    await user.clear(input)
-    await user.type(input, '99')
-    await user.click(screen.getByRole('button', { name: 'Salvar' }))
-    expect(store.getState().water.goal).toBe(30)
-    expect(screen.getByRole('button', { name: /Meta \(7,5 L\)/ })).toBeInTheDocument()
-  })
-
   it('tudo em dia mostra o aviso "Tudo certo por hoje"', async () => {
     const { user } = setup((s) => {
       s.areas.push(area('a', 'Quarto'))
-      s.water.count = 10
     })
     expect(screen.getByText('Tudo certo por hoje')).toBeInTheDocument()
     await goTo(user, 'Áreas')
@@ -611,7 +588,7 @@ describe('Bora: novas pendências', () => {
   })
 
   it('sem tarefas não há o que repriorizar', () => {
-    setup((s) => void s.areas.push(area('a', 'Quarto')))
+    setup((s) => void s.areas.push(area('a', 'Quarto', { lastDone: null })))
     expect(screen.getByText('Nenhuma tarefa para repriorizar.')).toBeInTheDocument()
   })
 

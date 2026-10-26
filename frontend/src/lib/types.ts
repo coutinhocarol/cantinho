@@ -77,19 +77,11 @@ export interface ListItem {
   note?: string
 }
 
-interface Water {
-  goal: number
-  date: string
-  count: number
-  v2: boolean
-}
-
 export interface AppState {
   v: number
   areas: Area[]
   tasks: Task[]
   events: CalEvent[]
-  water: Water
   lists: Record<ListId, ListItem[]>
   missed: MissedEvent[]
   /** Último dia (aaaa-mm-dd) em que as tarefas foram repriorizadas na matriz. */

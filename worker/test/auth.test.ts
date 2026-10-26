@@ -119,7 +119,7 @@ describe('isolamento entre usuários', () => {
     const ana = await loggedIn(db)
     await ana.put('/api/state', sampleState())
     await db.run((t) => t`delete from users`)
-    for (const table of ['areas', 'tasks', 'events', 'list_items', 'water', 'area_checks', 'event_done_dates']) {
+    for (const table of ['areas', 'tasks', 'events', 'list_items', 'area_checks', 'event_done_dates']) {
       const [{ n }] = await db.run((t) => t.unsafe(`select count(*)::int as n from ${table}`))
       expect(n).toBe(0)
     }

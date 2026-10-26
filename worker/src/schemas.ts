@@ -82,14 +82,6 @@ export const AppStateSchema = z.object({
   areas: list(Area),
   tasks: list(Task),
   events: list(CalEvent),
-  water: z
-    .object({
-      goal: num.default(10),
-      date: z.string().default(''),
-      count: num.default(0),
-      v2: z.boolean().default(true),
-    })
-    .default({ goal: 10, date: '', count: 0, v2: true }),
   lists: z
     .object({
       indicacoes: list(ListItem),

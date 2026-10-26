@@ -24,7 +24,6 @@ export type DialogState =
       opts?: { title?: string; linkTaskId?: string }
     }
   | { kind: 'listItem'; list: ListId; id: string }
-  | { kind: 'waterGoal' }
   | { kind: 'schedule'; taskId: string }
   | { kind: 'move'; taskId: string }
   | null

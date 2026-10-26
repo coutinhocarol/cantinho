@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { areaStatus, periodText } from './areas'
 import { eventsOn, occursOn, pruneEvents } from './events'
 import { dueStatus, organizeTasks, pendingTasks } from './tasks'
-import { emptyState, hasData, mergeLocalInto, normalize, waterCount, waterGoal } from './state'
+import { emptyState, hasData, mergeLocalInto, normalize } from './state'
 import type { Area, AppState, CalEvent, Task } from './types'
-import { DAY, firstChar, rel, ymd } from './time'
+import { DAY, firstChar, rel } from './time'
 
 // Quarta-feira, 21/10/2026, meio-dia
 const NOW = new Date(2026, 9, 21, 12, 0, 0)
@@ -210,27 +210,10 @@ describe('pruneEvents', () => {
 })
 
 describe('normalize', () => {
-  const fresh = (): AppState => {
-    const s = emptyState()
-    s.water = { goal: 10, date: ymd(NOW), count: 4, v2: true }
-    return s
-  }
+  const fresh = (): AppState => emptyState()
 
   it('não muda um estado já consistente', () => {
     expect(normalize(fresh(), NOW)).toBe(false)
-  })
-  it('zera a água na virada do dia', () => {
-    const s = fresh()
-    s.water.date = '2026-10-20'
-    expect(normalize(s, NOW)).toBe(true)
-    expect(s.water).toMatchObject({ date: '2026-10-21', count: 0 })
-  })
-  it('migra a meta de água antiga (sem v2) para 10 copos', () => {
-    const s = fresh()
-    s.water = { goal: 8, date: ymd(NOW), count: 2, v2: false }
-    normalize(s, NOW)
-    expect(s.water.goal).toBe(10)
-    expect(s.water.v2).toBe(true)
   })
   it('converte períodos antigos para "a cada X dias"', () => {
     const s = fresh()
@@ -264,21 +247,6 @@ describe('normalize', () => {
     expect(s.lists).toEqual({ indicacoes: [], hobbies: [], compras: [] })
     expect(s.missed).toEqual([])
     expect(s.events).toEqual([])
-  })
-})
-
-describe('água', () => {
-  it('meta mínima de 1 e contagem limitada à meta', () => {
-    const s = emptyState()
-    s.water = { goal: 0, date: ymd(NOW), count: 99, v2: true }
-    expect(waterGoal(s)).toBe(10)
-    s.water.goal = 5
-    expect(waterCount(s, NOW)).toBe(5)
-  })
-  it('contagem de outro dia vale zero', () => {
-    const s = emptyState()
-    s.water = { goal: 10, date: '2026-10-20', count: 6, v2: true }
-    expect(waterCount(s, NOW)).toBe(0)
   })
 })
 

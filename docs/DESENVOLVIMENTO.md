@@ -112,7 +112,6 @@ Tabelas relacionais no PostgreSQL:
 | `list_items`       | Indicações e Hobbies                                                                                                                                 |
 | `missed_events`    | compromissos (ou dias de um que se repete) que passaram sem ser marcados como feitos; ficam na Bora até a exclusão ser confirmada                   |
 | `user_state`       | dia da última repriorização das tarefas (uma linha por usuário)                                                                                      |
-| `water`            | meta e contagem de copos do dia (uma linha por usuário)                                                                                              |
 
 Toda linha pertence a um usuário (`user_id`, chave primária composta `user_id + id`): cada conta só
 vê os próprios dados. Há `CHECK`s e chaves estrangeiras para os valores válidos, e **Row Level

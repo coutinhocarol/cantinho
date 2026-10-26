@@ -55,7 +55,6 @@ describe('/api/state', () => {
     expect(e1.doneDates).toEqual(['2026-10-27', '2026-11-03'])
     expect([e2.allDay, e2.start, e2.end, e2.notes]).toEqual([true, '', '', 'sem trabalho'])
 
-    expect(saved.water).toEqual({ goal: 8, date: '2026-10-19', count: 3, v2: true })
     expect(saved.lists.hobbies[0].title).toBe('Cerâmica')
     expect(saved.missed).toEqual(sampleState().missed)
     expect(saved.reprioDate).toBe('2026-10-19')
@@ -173,13 +172,6 @@ describe('/api/state', () => {
     ])
   })
 
-  it('a meta de água é limitada a 1..30', async () => {
-    const s = sampleState()
-    s.water.goal = 99
-    await client.put('/api/state', s)
-    expect((await client.get('/api/state')).body.water.goal).toBe(30)
-  })
-
   it('tarefa de área inexistente é recusada e nada é salvo', async () => {
     await client.put('/api/state', sampleState())
     const bad = sampleState()
@@ -211,7 +203,7 @@ describe('/api/state', () => {
   it('estado vazio pode ser salvo', async () => {
     expect((await client.put('/api/state', {})).status).toBe(200)
     const saved = (await client.get('/api/state')).body
-    expect([saved.areas, saved.water.goal]).toEqual([[], 10])
+    expect(saved.areas).toEqual([])
   })
 
   it('nomes com aspas, emojis e SQL são guardados como texto', async () => {
