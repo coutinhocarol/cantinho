@@ -39,11 +39,14 @@ describe('/api/state', () => {
     const saved = (await client.get('/api/state')).body
 
     const [a1, a2] = saved.areas
-    expect(a1.period).toEqual({ type: 'interval', every: 7, unit: 'days' })
-    expect(a1.history).toEqual([1729300000000, 1729200000000]) // mais recente primeiro
-    expect([a1.lastDone, a1.forceDue, a1.emoji]).toEqual([1729300000000, 1729300001234, '🛏️'])
-    expect(a2.period).toEqual({ type: 'weekly', days: [2, 5], time: '21:00' })
-    expect([a2.lastDone, a2.acceptsTasks]).toEqual([null, false])
+    const [r1, r2] = a1.routines
+    expect(a1.routines.map((r: any) => [r.id, r.name])).toEqual([['r1', 'Limpeza geral'], ['r2', 'Arrumação rápida']])
+    expect(r1.period).toEqual({ type: 'interval', every: 7, unit: 'days' })
+    expect(r1.history).toEqual([1729300000000, 1729200000000]) // mais recente primeiro
+    expect([r1.lastDone, r1.forceDue, a1.emoji]).toEqual([1729300000000, 1729300001234, '🛏️'])
+    expect([r2.period, r2.lastDone, r2.history]).toEqual([{ type: 'interval', every: 1, unit: 'days' }, null, []])
+    expect(a2.routines[0].period).toEqual({ type: 'weekly', days: [2, 5], time: '21:00' })
+    expect([a2.routines[0].lastDone, a2.acceptsTasks]).toEqual([null, false])
     expect(saved.areas.map((a: any) => a.order)).toEqual([0, 1])
 
     const [t1, t2] = saved.tasks
@@ -99,14 +102,14 @@ describe('/api/state', () => {
     s.events = [s.events[1]]
     s.lists.hobbies = []
     s.missed = []
-    s.areas[0].history = [1729300000000]
+    s.areas[0].routines[0].history = [1729300000000]
     expect((await client.put('/api/state', s)).status).toBe(200)
     const saved = (await client.get('/api/state')).body
     expect(saved.tasks.map((t: any) => t.id)).toEqual(['t2'])
     expect(saved.events.map((e: any) => e.id)).toEqual(['e2'])
     expect(saved.lists.hobbies).toEqual([])
     expect(saved.missed).toEqual([])
-    expect(saved.areas[0].history).toEqual([1729300000000])
+    expect(saved.areas[0].routines[0].history).toEqual([1729300000000])
     expect(await count('event_done_dates')).toBe(0)
   })
 
@@ -154,19 +157,47 @@ describe('/api/state', () => {
     const s = sampleState()
     s.areas.reverse()
     s.areas[1].name = 'Quarto de hóspedes'
-    s.areas[1].period = { type: 'interval', every: 3, unit: 'days' } as any
+    s.areas[1].routines[0].period = { type: 'interval', every: 3, unit: 'days' } as any
     await client.put('/api/state', s)
     const areas = (await client.get('/api/state')).body.areas
     expect(areas.map((a: any) => a.id)).toEqual(['a2', 'a1'])
-    expect([areas[1].name, areas[1].period.every]).toEqual(['Quarto de hóspedes', 3])
+    expect([areas[1].name, areas[1].routines[0].period.every]).toEqual(['Quarto de hóspedes', 3])
+  })
+
+  it('adicionar e remover rotinas de uma área', async () => {
+    await client.put('/api/state', sampleState())
+    const s = sampleState()
+    ;(s.areas[0] as any).routines = [s.areas[0].routines[1]]
+    ;(s.areas[1].routines as any[]).push({ ...s.areas[1].routines[0], id: 'r4', name: 'Adubar', history: [1729300000000] })
+    s.areas[1].routines[0].name = 'Regar'
+    expect((await client.put('/api/state', s)).status).toBe(200)
+    const areas = (await client.get('/api/state')).body.areas
+    expect(areas[0].routines.map((r: any) => r.id)).toEqual(['r2'])
+    expect(areas[1].routines.map((r: any) => [r.id, r.name, r.history.length])).toEqual([
+      ['r3', 'Regar', 0],
+      ['r4', 'Adubar', 1],
+    ])
+    expect(await count('routines')).toBe(3)
+  })
+
+  it('com mais de uma rotina, todas precisam de nome', async () => {
+    const s = sampleState()
+    s.areas[0].routines[1].name = ' '
+    expect((await client.put('/api/state', s)).status).toBe(422)
+  })
+
+  it('uma área precisa de pelo menos uma rotina', async () => {
+    const s = sampleState()
+    ;(s.areas[0] as any).routines = []
+    expect((await client.put('/api/state', s)).status).toBe(422)
   })
 
   it('períodos antigos são convertidos', async () => {
     const s = sampleState()
-    s.areas[0].period = { type: 'interval', every: 2, unit: 'weeks' } as any
-    s.areas[1].period = { type: 'monthly' } as any
+    s.areas[0].routines[0].period = { type: 'interval', every: 2, unit: 'weeks' } as any
+    s.areas[1].routines[0].period = { type: 'monthly' } as any
     await client.put('/api/state', s)
-    expect((await client.get('/api/state')).body.areas.map((a: any) => a.period)).toEqual([
+    expect((await client.get('/api/state')).body.areas.map((a: any) => a.routines[0].period)).toEqual([
       { type: 'interval', every: 14, unit: 'days' },
       { type: 'interval', every: 30, unit: 'days' },
     ])

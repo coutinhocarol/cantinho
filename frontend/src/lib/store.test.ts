@@ -10,9 +10,16 @@ const area = (id: string, name = id): Area => ({
   id,
   name,
   emoji: '✨',
-  period: { type: 'interval', every: 7, unit: 'days' },
-  lastDone: null,
-  history: [],
+  routines: [
+    {
+      id: id + '-r',
+      name: '',
+      period: { type: 'interval', every: 7, unit: 'days' },
+      lastDone: null,
+      history: [],
+      createdAt: NOW.getTime(),
+    },
+  ],
   createdAt: NOW.getTime(),
   order: 0,
 })

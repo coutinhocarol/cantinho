@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { areaStatus, periodText } from './areas'
+import { areaDue, periodText, routineLabel, routineStatus } from './areas'
 import { eventsOn, occursOn, pruneEvents } from './events'
 import { dueStatus, organizeTasks, pendingTasks } from './tasks'
 import { emptyState, hasData, mergeLocalInto, normalize } from './state'
-import type { Area, AppState, CalEvent, Task } from './types'
+import type { Area, AppState, CalEvent, Routine, Task } from './types'
 import { DAY, firstChar, rel } from './time'
 
 // Quarta-feira, 21/10/2026, meio-dia
@@ -15,13 +15,21 @@ beforeEach(() => {
 })
 afterEach(() => vi.useRealTimers())
 
+const routine = (over: Partial<Routine> = {}): Routine => ({
+  id: 'r1',
+  name: '',
+  period: { type: 'interval', every: 7, unit: 'days' },
+  lastDone: null,
+  history: [],
+  createdAt: NOW.getTime() - 30 * DAY,
+  ...over,
+})
+
 const area = (over: Partial<Area> = {}): Area => ({
   id: 'a1',
   name: 'Quarto',
   emoji: '🛏️',
-  period: { type: 'interval', every: 7, unit: 'days' },
-  lastDone: null,
-  history: [],
+  routines: [routine()],
   createdAt: NOW.getTime() - 30 * DAY,
   order: 0,
   ...over,
@@ -38,6 +46,29 @@ const ev = (over: Partial<CalEvent> = {}): CalEvent => ({
   notes: '',
   createdAt: 0,
   ...over,
+})
+
+describe('rotinas da área', () => {
+  it('nome mostrado: o da área, ou "área · rotina" quando há várias', () => {
+    const one = area({ routines: [routine()] })
+    expect(routineLabel(one, one.routines[0])).toBe('Quarto')
+    const two = area({
+      routines: [routine({ id: 'r1', name: 'Limpeza geral' }), routine({ id: 'r2', name: 'Arrumação rápida' })],
+    })
+    expect(routineLabel(two, two.routines[1])).toBe('Quarto · Arrumação rápida')
+  })
+  it('a área está pendente se qualquer rotina estiver', () => {
+    const fresh = NOW.getTime() - DAY
+    const a = area({
+      routines: [
+        routine({ id: 'r1', lastDone: fresh }),
+        routine({ id: 'r2', lastDone: fresh, period: { type: 'interval', every: 1, unit: 'days' } }),
+      ],
+    })
+    expect(areaDue(a, NOW.getTime())).toBe(true)
+    a.routines[1].lastDone = NOW.getTime()
+    expect(areaDue(a, NOW.getTime())).toBe(false)
+  })
 })
 
 describe('periodText', () => {
@@ -58,56 +89,56 @@ describe('periodText', () => {
   })
 })
 
-describe('areaStatus (a cada X dias)', () => {
+describe('routineStatus (a cada X dias)', () => {
   it('área nunca checada fica pendente', () => {
-    const st = areaStatus(area(), NOW.getTime())
+    const st = routineStatus(routine(), NOW.getTime())
     expect(st).toMatchObject({ due: true, never: true, progress: 1 })
   })
   it('vence X dias depois da última checagem', () => {
     const last = NOW.getTime() - 8 * DAY
-    const st = areaStatus(area({ lastDone: last }), NOW.getTime())
+    const st = routineStatus(routine({ lastDone: last }), NOW.getTime())
     expect(st.due).toBe(true)
     expect(st.since).toBe(last + 7 * DAY)
   })
   it('em dia mostra progresso e a próxima data', () => {
     const last = NOW.getTime() - DAY
-    const st = areaStatus(area({ lastDone: last }), NOW.getTime())
+    const st = routineStatus(routine({ lastDone: last }), NOW.getTime())
     expect(st.due).toBe(false)
     expect(st.progress).toBeCloseTo(1 / 7)
     expect(st.nextAt).toBe(last + 7 * DAY)
   })
   it('"mandar pra checar" força pendência', () => {
     const t = NOW.getTime() - 1000
-    const st = areaStatus(area({ lastDone: NOW.getTime(), forceDue: t }), NOW.getTime())
+    const st = routineStatus(routine({ lastDone: NOW.getTime(), forceDue: t }), NOW.getTime())
     expect(st).toMatchObject({ due: true, forced: true, since: t })
   })
 })
 
-describe('areaStatus (dias da semana)', () => {
-  const weekly = (over: Partial<Area> = {}) =>
-    area({ period: { type: 'weekly', days: [2], time: '21:00' }, ...over })
+describe('routineStatus (dias da semana)', () => {
+  const weekly = (over: Partial<Routine> = {}) =>
+    routine({ period: { type: 'weekly', days: [2], time: '21:00' }, ...over })
 
   it('sem dias definidos é inválida', () => {
-    const st = areaStatus(area({ period: { type: 'weekly', days: [], time: '21:00' } }))
+    const st = routineStatus(routine({ period: { type: 'weekly', days: [], time: '21:00' } }))
     expect(st).toMatchObject({ due: false, invalid: true })
   })
   it('fica pendente depois do horário do dia escolhido', () => {
     const tue2100 = new Date(2026, 9, 20, 21, 0).getTime()
-    const st = areaStatus(weekly(), NOW.getTime())
+    const st = routineStatus(weekly(), NOW.getTime())
     expect(st.due).toBe(true)
     expect(st.since).toBe(tue2100)
   })
   it('checagem depois do horário vale para aquele dia', () => {
-    const st = areaStatus(weekly({ lastDone: new Date(2026, 9, 20, 22, 0).getTime() }), NOW.getTime())
+    const st = routineStatus(weekly({ lastDone: new Date(2026, 9, 20, 22, 0).getTime() }), NOW.getTime())
     expect(st.due).toBe(false)
     expect(st.nextAt).toBe(new Date(2026, 9, 27, 21, 0).getTime())
   })
   it('checagem antes do horário não vale para aquele dia', () => {
-    const st = areaStatus(weekly({ lastDone: new Date(2026, 9, 20, 20, 0).getTime() }), NOW.getTime())
+    const st = routineStatus(weekly({ lastDone: new Date(2026, 9, 20, 20, 0).getTime() }), NOW.getTime())
     expect(st.due).toBe(true)
   })
   it('área criada depois do último horário não nasce pendente', () => {
-    const st = areaStatus(weekly({ createdAt: new Date(2026, 9, 21, 9, 0).getTime() }), NOW.getTime())
+    const st = routineStatus(weekly({ createdAt: new Date(2026, 9, 21, 9, 0).getTime() }), NOW.getTime())
     expect(st.due).toBe(false)
   })
 })
@@ -218,18 +249,40 @@ describe('normalize', () => {
   it('converte períodos antigos para "a cada X dias"', () => {
     const s = fresh()
     const legacy = (period: unknown, id: string) =>
-      ({ ...area({ id }), period }) as unknown as Area
+      area({ id, routines: [{ ...routine(), period } as unknown as Routine] })
     s.areas = [
       legacy({ type: 'monthly' }, 'm'),
       legacy({ type: 'interval', every: 2, unit: 'weeks' }, 'w'),
       legacy({ type: 'interval', every: 48, unit: 'hours' }, 'h'),
     ]
     expect(normalize(s, NOW)).toBe(true)
-    expect(s.areas.map((a) => a.period)).toEqual([
+    expect(s.areas.map((a) => a.routines[0].period)).toEqual([
       { type: 'interval', every: 30, unit: 'days' },
       { type: 'interval', every: 14, unit: 'days' },
       { type: 'interval', every: 2, unit: 'days' },
     ])
+  })
+  it('área antiga (periodicidade na própria área) vira uma rotina sem nome', () => {
+    const s = fresh()
+    s.areas = [
+      {
+        id: 'old',
+        name: 'Quarto',
+        emoji: '🛏️',
+        period: { type: 'weekly', days: [2], time: '21:00' },
+        lastDone: 123,
+        history: [123],
+        forceDue: 456,
+        createdAt: 1,
+        order: 0,
+      } as unknown as Area,
+    ]
+    expect(normalize(s, NOW)).toBe(true)
+    expect(s.areas[0]).not.toHaveProperty('period')
+    expect(s.areas[0].routines).toEqual([
+      { id: 'old', name: '', period: { type: 'weekly', days: [2], time: '21:00' }, lastDone: 123, history: [123], createdAt: 1, forceDue: 456 },
+    ])
+    expect(normalize(s, NOW)).toBe(false)
   })
   it('solta o vínculo de tarefa com compromisso que não existe mais', () => {
     const s = fresh()

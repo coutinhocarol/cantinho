@@ -5,7 +5,7 @@
  * (`loadState`), dentro de uma transação. Toda consulta é filtrada por `user_id`.
  */
 import type { Sql } from 'postgres'
-import type { AppStateInput, AreaInput, EventInput } from './schemas'
+import type { AppStateInput, EventInput, RoutineInput } from './schemas'
 
 export class StateError extends Error {}
 
@@ -30,7 +30,7 @@ function clockTime(v: string | null | undefined): string | null {
 }
 
 /** Períodos antigos (mensal, semanas, horas) viram "a cada X dias". */
-function intervalDays(p: AreaInput['period']): number {
+function intervalDays(p: RoutineInput['period']): number {
   if (p.type === 'monthly') return 30
   let every = Math.trunc(p.every || 1)
   if (p.unit === 'weeks') every *= 7
@@ -50,8 +50,18 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
       throw new StateError(`A tarefa '${t.id}' aponta para uma área que não existe`)
   }
 
+  const routineIds = new Set<string>()
+  for (const a of st.areas) {
+    for (const r of a.routines) {
+      if (routineIds.has(r.id)) throw new StateError(`A rotina '${r.id}' aparece mais de uma vez`)
+      routineIds.add(r.id)
+      if (a.routines.length > 1 && !r.name?.trim())
+        throw new StateError(`A área '${a.id}' tem mais de uma rotina: todas precisam de nome`)
+    }
+  }
+
   /** Apaga as linhas do usuário cujo id não veio no estado. */
-  const prune = async (table: 'tasks' | 'events' | 'areas' | 'list_items', keep: Set<string>) => {
+  const prune = async (table: 'tasks' | 'events' | 'areas' | 'routines' | 'list_items', keep: Set<string>) => {
     const rows = await tx<{ id: string }[]>`select id from ${tx(table)} where user_id = ${userId}`
     const gone = rows.map((r) => r.id).filter((id) => !keep.has(id))
     if (gone.length) await tx`delete from ${tx(table)} where user_id = ${userId} and id in ${tx(gone)}`
@@ -59,6 +69,7 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   await prune('tasks', new Set(st.tasks.map((t) => t.id)))
   await prune('events', eventIds)
   await prune('areas', areaIds)
+  await prune('routines', routineIds)
 
   // compromissos
   const eventRows = st.events.map((e) => eventRow(userId, e))
@@ -78,27 +89,40 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   )
   if (done.length) await tx`insert into event_done_dates ${tx(done)}`
 
-  // áreas (o array de dias da semana é enviado como texto e convertido no SQL)
+  // áreas
   for (const [order, a] of st.areas.entries()) {
-    const weekly = a.period.type === 'weekly'
-    const days = weekly ? pgIntArray(a.period.days ?? []) : null
-    const time = weekly ? (clockTime(a.period.time) ?? '21:00') : null
-    await tx`insert into areas (user_id, id, name, emoji, period_type, interval_days, weekly_days,
-        weekly_time, last_done, force_due, accepts_tasks, sort_order, created_at)
+    await tx`insert into areas (user_id, id, name, emoji, accepts_tasks, sort_order, created_at)
       values (${userId}, ${a.id}, ${a.name}, ${a.emoji ?? ''},
-        ${weekly ? 'weekly' : 'interval'}, ${weekly ? null : intervalDays(a.period)},
-        ${days}::smallint[], ${time}::time, ${ts(a.lastDone)}, ${ts(a.forceDue)},
         ${a.acceptsTasks !== false}, ${order}, ${ts(a.createdAt) ?? new Date()})
       on conflict (user_id, id) do update set name = excluded.name, emoji = excluded.emoji,
-        period_type = excluded.period_type,
-        interval_days = excluded.interval_days, weekly_days = excluded.weekly_days,
-        weekly_time = excluded.weekly_time, last_done = excluded.last_done,
-        force_due = excluded.force_due, accepts_tasks = excluded.accepts_tasks,
-        sort_order = excluded.sort_order, created_at = excluded.created_at`
+        accepts_tasks = excluded.accepts_tasks, sort_order = excluded.sort_order,
+        created_at = excluded.created_at`
+  }
+
+  // rotinas (o array de dias da semana é enviado como texto e convertido no SQL)
+  for (const a of st.areas) {
+    for (const [order, r] of a.routines.entries()) {
+      const weekly = r.period.type === 'weekly'
+      const days = weekly ? pgIntArray(r.period.days ?? []) : null
+      const time = weekly ? (clockTime(r.period.time) ?? '21:00') : null
+      await tx`insert into routines (user_id, id, area_id, name, period_type, interval_days, weekly_days,
+          weekly_time, last_done, force_due, sort_order, created_at)
+        values (${userId}, ${r.id}, ${a.id}, ${r.name?.trim() ?? ''},
+          ${weekly ? 'weekly' : 'interval'}, ${weekly ? null : intervalDays(r.period)},
+          ${days}::smallint[], ${time}::time, ${ts(r.lastDone)}, ${ts(r.forceDue)},
+          ${order}, ${ts(r.createdAt) ?? new Date()})
+        on conflict (user_id, id) do update set area_id = excluded.area_id, name = excluded.name,
+          period_type = excluded.period_type, interval_days = excluded.interval_days,
+          weekly_days = excluded.weekly_days, weekly_time = excluded.weekly_time,
+          last_done = excluded.last_done, force_due = excluded.force_due,
+          sort_order = excluded.sort_order, created_at = excluded.created_at`
+    }
   }
   await tx`delete from area_checks where user_id = ${userId}`
   const checks = st.areas.flatMap((a) =>
-    [...new Set(a.history ?? [])].map((h) => ({ user_id: userId, area_id: a.id, checked_at: new Date(h) })),
+    a.routines.flatMap((r) =>
+      [...new Set(r.history ?? [])].map((h) => ({ user_id: userId, routine_id: r.id, checked_at: new Date(h) })),
+    ),
   )
   if (checks.length) await tx`insert into area_checks ${tx(checks)}`
 
@@ -195,14 +219,16 @@ const round = (v: number | null) => (v == null ? null : Math.round(v))
 
 /** Estado completo no formato do app, ou `null` se nada foi salvo ainda. */
 export async function loadState(tx: Sql, userId: string) {
-  const [areas, checks, tasks, events, doneDates, items, missed, [userState]] = await Promise.all([
-    tx<Record<string, any>[]>`select id, name, emoji, period_type, interval_days,
-        to_json(weekly_days) as weekly_days, ${tx.unsafe(hhmm('weekly_time'))} as weekly_time,
-        ${tx.unsafe(ms('last_done'))} as last_done,
-        ${tx.unsafe(ms('force_due'))} as force_due, accepts_tasks, sort_order,
+  const [areas, routines, checks, tasks, events, doneDates, items, missed, [userState]] = await Promise.all([
+    tx<Record<string, any>[]>`select id, name, emoji, accepts_tasks, sort_order,
         ${tx.unsafe(ms('created_at'))} as created_at
       from areas where user_id = ${userId} order by sort_order, created_at`,
-    tx<{ area_id: string; at: number }[]>`select area_id, ${tx.unsafe(ms('checked_at'))} as at
+    tx<Record<string, any>[]>`select id, area_id, name, period_type, interval_days,
+        to_json(weekly_days) as weekly_days, ${tx.unsafe(hhmm('weekly_time'))} as weekly_time,
+        ${tx.unsafe(ms('last_done'))} as last_done, ${tx.unsafe(ms('force_due'))} as force_due,
+        ${tx.unsafe(ms('created_at'))} as created_at
+      from routines where user_id = ${userId} order by sort_order, created_at`,
+    tx<{ routine_id: string; at: number }[]>`select routine_id, ${tx.unsafe(ms('checked_at'))} as at
       from area_checks where user_id = ${userId} order by checked_at desc`,
     tx<Record<string, any>[]>`select id, title, area_id, event_id, quad, ${tx.unsafe(iso('due'))} as due,
         notes, ${tx.unsafe(ms('created_at'))} as created_at
@@ -225,7 +251,9 @@ export async function loadState(tx: Sql, userId: string) {
   if (!userState) return null
 
   const history = new Map<string, number[]>()
-  for (const c of checks) history.set(c.area_id, [...(history.get(c.area_id) ?? []), Math.round(c.at)])
+  for (const c of checks) history.set(c.routine_id, [...(history.get(c.routine_id) ?? []), Math.round(c.at)])
+  const byArea = new Map<string, Record<string, any>[]>()
+  for (const r of routines) byArea.set(r.area_id, [...(byArea.get(r.area_id) ?? []), r])
   const done = new Map<string, string[]>()
   for (const d of doneDates) done.set(d.event_id, [...(done.get(d.event_id) ?? []), d.d])
 
@@ -250,16 +278,21 @@ export async function loadState(tx: Sql, userId: string) {
       id: a.id,
       name: a.name,
       emoji: a.emoji,
-      period:
-        a.period_type === 'interval'
-          ? { type: 'interval', every: a.interval_days, unit: 'days' }
-          : { type: 'weekly', days: a.weekly_days ?? [], time: a.weekly_time ?? '' },
-      lastDone: round(a.last_done),
-      history: history.get(a.id) ?? [],
+      routines: (byArea.get(a.id) ?? []).map((r) => ({
+        id: r.id,
+        name: r.name,
+        period:
+          r.period_type === 'interval'
+            ? { type: 'interval', every: r.interval_days, unit: 'days' }
+            : { type: 'weekly', days: r.weekly_days ?? [], time: r.weekly_time ?? '' },
+        lastDone: round(r.last_done),
+        history: history.get(r.id) ?? [],
+        createdAt: round(r.created_at),
+        ...(r.force_due != null ? { forceDue: round(r.force_due) } : {}),
+      })),
       createdAt: round(a.created_at),
       order: a.sort_order,
       acceptsTasks: a.accepts_tasks,
-      ...(a.force_due != null ? { forceDue: round(a.force_due) } : {}),
     })),
     tasks: tasks.map((t) => ({
       id: t.id,

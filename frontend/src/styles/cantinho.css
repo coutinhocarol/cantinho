@@ -214,6 +214,9 @@ h2{font-size:21px;letter-spacing:-.02em;margin:0;font-weight:700}
 .area-card dt{color:var(--muted)}
 .area-card dd{margin:0}
 .area-card .acts{display:flex;gap:6px;margin-top:auto}
+.area-card .routine{display:flex;flex-direction:column;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
+.area-card .routine-head{display:flex;flex-direction:column}
+.area-card .routine-head b{font-size:16px}
 .grip{border:0;background:transparent;color:var(--muted);width:36px;height:40px;border-radius:12px;display:grid;place-items:center;cursor:grab;touch-action:none;margin-left:auto;flex:none;-webkit-user-select:none;user-select:none}
 .grip:hover{background:var(--soft);color:var(--ink)}
 .grip svg{width:18px;height:18px}
@@ -237,6 +240,7 @@ dialog::backdrop{background:rgba(29,42,35,.35);backdrop-filter:blur(2px)}
 .preview{font-size:14px;padding:10px 12px;border-radius:12px;background:var(--green-tint);color:var(--green-ink)}
 .dlg-foot{display:flex;gap:8px;align-items:center;position:sticky;bottom:calc(var(--dp) * -1);margin:0 calc(var(--dp) * -1) calc(var(--dp) * -1);padding:12px var(--dp) var(--dp);background:var(--surface);z-index:1}
 .dlg-foot .spacer{flex:1}
+.routine-ed{border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:14px}
 .hist{font-size:14px;color:var(--muted);margin:0;padding-left:18px}
 textarea.field{min-height:72px;resize:vertical}
 

@@ -1,12 +1,12 @@
-import { areaById, areaStatus } from './areas'
+import { areaById, routineById, routineLabel, routineStatus } from './areas'
 import type { Store } from './store'
-import type { Area, AppState, CalEvent, ListId, ListItem, Task } from './types'
+import type { Area, AppState, CalEvent, ListId, ListItem, Period, Task } from './types'
 import { DAY, fmtDayMonth, fmtWhen, parseYmd, uid, ymd } from './time'
 
 type ToastFn = (msg: string, undo?: () => void) => void
 
 export interface Actions {
-  markDone(id: string): void
+  markDone(areaId: string, routineId: string): void
   toggleTask(id: string): void
   completeEvent(id: string, key: string): void
   moveEvent(id: string, fromKey: string, toKey: string, onMoved?: (toKey: string) => void): void
@@ -15,7 +15,7 @@ export interface Actions {
   confirmMissed(id: string): void
   doneReprio(): void
   forceAll(): void
-  forceDue(id: string): void
+  forceDue(areaId: string, routineId: string): void
   reorderAreas(ids: string[]): void
   addExamples(): void
 }
@@ -27,15 +27,17 @@ export function createActions(store: Store, toast: ToastFn): Actions {
   const byCreated = (a: ListItem, b: ListItem) => (a.createdAt || 0) - (b.createdAt || 0)
 
   return {
-    markDone(id) {
-      const a = areaById(get(), id)
-      if (!a) return
-      const prev = { lastDone: a.lastDone, history: [...(a.history || [])], forceDue: a.forceDue }
+    markDone(areaId, routineId) {
+      const a = areaById(get(), areaId)
+      const r = routineById(a, routineId)
+      if (!a || !r) return
+      const label = routineLabel(a, r)
+      const prev = { lastDone: r.lastDone, history: [...(r.history || [])], forceDue: r.forceDue }
       const now = Date.now()
-      const early = a.period.type === 'weekly' && !areaStatus(a, now).due
-      const nextAt = early ? areaStatus(a, now).nextAt : null
+      const early = r.period.type === 'weekly' && !routineStatus(r, now).due
+      const nextAt = early ? routineStatus(r, now).nextAt : null
       commit((d) => {
-        const x = areaById(d, id)!
+        const x = routineById(areaById(d, areaId), routineId)!
         x.lastDone = now
         x.history = [now, ...(x.history || [])].slice(0, 5)
         delete x.forceDue
@@ -43,15 +45,16 @@ export function createActions(store: Store, toast: ToastFn): Actions {
       const hhmm = new Date(now).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       toast(
         early && nextAt
-          ? `${a.name} checada às ${hhmm}. Volta a ficar pendente ${fmtWhen(nextAt)}`
-          : `${a.name} checada às ${hhmm}`,
+          ? `${label} checada às ${hhmm}. Volta a ficar pendente ${fmtWhen(nextAt)}`
+          : `${label} checada às ${hhmm}`,
         () => {
-          if (!areaById(get(), id)) return
+          const x = routineById(areaById(get(), areaId), routineId)
+          if (!x) return
           commit((d) => {
-            const x = areaById(d, id)!
-            x.lastDone = prev.lastDone
-            x.history = prev.history
-            if (prev.forceDue) x.forceDue = prev.forceDue
+            const y = routineById(areaById(d, areaId), routineId)!
+            y.lastDone = prev.lastDone
+            y.history = prev.history
+            if (prev.forceDue) y.forceDue = prev.forceDue
           })
         },
       )
@@ -188,36 +191,37 @@ export function createActions(store: Store, toast: ToastFn): Actions {
 
     forceAll() {
       const now = Date.now()
-      const ids: string[] = []
-      get().areas.forEach((a) => {
-        if (!areaStatus(a, now).due) ids.push(a.id)
-      })
-      if (!ids.length) return
-      commit((d) =>
-        d.areas.forEach((a) => {
-          if (ids.includes(a.id)) a.forceDue = now
+      const refs: [string, string][] = []
+      get().areas.forEach((a) =>
+        a.routines.forEach((r) => {
+          if (!routineStatus(r, now).due) refs.push([a.id, r.id])
         }),
       )
-      toast(`${ids.length} ${ids.length === 1 ? 'área foi' : 'áreas foram'} pra A checar`, () =>
-        commit((d) =>
-          ids.forEach((i) => {
-            const x = areaById(d, i)
-            if (x) delete x.forceDue
-          }),
-        ),
+      if (!refs.length) return
+      const each = (d: AppState, fn: (r: Area['routines'][number]) => void) =>
+        refs.forEach(([aId, rId]) => {
+          const x = routineById(areaById(d, aId), rId)
+          if (x) fn(x)
+        })
+      commit((d) => each(d, (r) => void (r.forceDue = now)))
+      toast(
+        `${refs.length} ${refs.length === 1 ? 'rotina foi' : 'rotinas foram'} pra A checar`,
+        () => commit((d) => each(d, (r) => void delete r.forceDue)),
       )
     },
 
-    forceDue(id) {
-      const a = areaById(get(), id)
-      if (!a) return
+    forceDue(areaId, routineId) {
+      const a = areaById(get(), areaId)
+      const r = routineById(a, routineId)
+      if (!a || !r) return
       commit((d) => {
-        areaById(d, id)!.forceDue = Date.now()
+        routineById(areaById(d, areaId), routineId)!.forceDue = Date.now()
       })
-      toast(`${a.name} voltou para A checar`, () => {
-        if (!areaById(get(), id)) return
+      toast(`${routineLabel(a, r)} voltou para A checar`, () => {
+        const x = routineById(areaById(get(), areaId), routineId)
+        if (!x) return
         commit((d) => {
-          delete areaById(d, id)!.forceDue
+          delete routineById(areaById(d, areaId), routineId)!.forceDue
         })
       })
     },
@@ -239,26 +243,30 @@ export function createActions(store: Store, toast: ToastFn): Actions {
     addExamples() {
       const now = Date.now()
       commit((s: AppState) => {
-        const mk = (
-          name: string,
-          emoji: string,
-          period: Area['period'],
-          lastDone: number | null,
-        ): Area => ({
+        const rt = (name: string, period: Period, lastDone: number | null): Area['routines'][number] => ({
           id: uid(),
           name,
-          emoji,
           period,
           lastDone,
           history: lastDone ? [lastDone] : [],
           createdAt: now - 30 * DAY,
+        })
+        const mk = (name: string, emoji: string, routines: Area['routines']): Area => ({
+          id: uid(),
+          name,
+          emoji,
+          routines,
+          createdAt: now - 30 * DAY,
           order: s.areas.length,
         })
         const ex = [
-          mk('Quarto', '🛏️', { type: 'interval', every: 7, unit: 'days' }, now - 8 * DAY),
-          mk('Plantas', '🪴', { type: 'weekly', days: [2], time: '21:00' }, null),
-          mk('Cozinha', '🍳', { type: 'interval', every: 2, unit: 'days' }, now - DAY),
-          mk('Finanças', '🧾', { type: 'interval', every: 30, unit: 'days' }, now - 12 * DAY),
+          mk('Quarto', '🛏️', [
+            rt('Arrumação rápida', { type: 'interval', every: 1, unit: 'days' }, now - DAY / 2),
+            rt('Limpeza geral', { type: 'interval', every: 7, unit: 'days' }, now - 8 * DAY),
+          ]),
+          mk('Plantas', '🪴', [rt('', { type: 'weekly', days: [2], time: '21:00' }, null)]),
+          mk('Cozinha', '🍳', [rt('', { type: 'interval', every: 2, unit: 'days' }, now - DAY)]),
+          mk('Finanças', '🧾', [rt('', { type: 'interval', every: 30, unit: 'days' }, now - 12 * DAY)]),
         ]
         ex.forEach((a, i) => {
           a.order = s.areas.length + i

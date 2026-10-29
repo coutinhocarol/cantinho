@@ -4,23 +4,39 @@ import { describe, expect, it, vi } from 'vitest'
 import type { StateApi } from '../lib/api'
 import { emptyState } from '../lib/state'
 import { LS_KEY, Store } from '../lib/store'
-import type { AppState, Area, CalEvent, Task } from '../lib/types'
+import type { AppState, Area, CalEvent, Routine, Task } from '../lib/types'
 import { DAY, ymd } from '../lib/time'
 import App from './App'
 
 const now = () => Date.now()
 
-const area = (id: string, name: string, over: Partial<Area> = {}): Area => ({
-  id,
-  name,
-  emoji: '🏠',
-  period: { type: 'interval', every: 7, unit: 'days' },
-  lastDone: now() - 2 * DAY,
-  history: [],
-  createdAt: now() - 30 * DAY,
-  order: 0,
-  ...over,
-})
+/** Área com uma rotina; `period`, `lastDone` e `forceDue` ajustam essa rotina. */
+const area = (
+  id: string,
+  name: string,
+  over: Partial<Area> & Partial<Pick<Routine, 'period' | 'lastDone' | 'forceDue'>> = {},
+): Area => {
+  const { period, lastDone, forceDue, ...rest } = over
+  return {
+    id,
+    name,
+    emoji: '🏠',
+    routines: [
+      {
+        id: id + '-r',
+        name: '',
+        period: period ?? { type: 'interval', every: 7, unit: 'days' },
+        lastDone: lastDone === undefined ? now() - 2 * DAY : lastDone,
+        history: [],
+        createdAt: now() - 30 * DAY,
+        ...(forceDue ? { forceDue } : {}),
+      },
+    ],
+    createdAt: now() - 30 * DAY,
+    order: 0,
+    ...rest,
+  }
+}
 
 const task = (id: string, title: string, areaId: string, over: Partial<Task> = {}): Task => ({
   id,
@@ -67,11 +83,11 @@ describe('Início (Bora)', () => {
     const { user, store } = setup((s) => void s.areas.push(area('a', 'Quarto', { lastDone: null })))
     expect(screen.getByText('Ainda não checada')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Checar Quarto' }))
-    expect(store.getState().areas[0].lastDone).not.toBeNull()
+    expect(store.getState().areas[0].routines[0].lastDone).not.toBeNull()
     expect(screen.getByText(/Quarto checada às/)).toBeInTheDocument()
     expect(screen.getByText('Tudo certo por hoje')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Desfazer' }))
-    expect(store.getState().areas[0].lastDone).toBeNull()
+    expect(store.getState().areas[0].routines[0].lastDone).toBeNull()
     expect(screen.getByText('Ainda não checada')).toBeInTheDocument()
   })
 
@@ -159,7 +175,9 @@ describe('Áreas', () => {
     expect(within(dialog).getByText('A cada 3 dias', { selector: '.preview' })).toBeInTheDocument()
     await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
     const a = store.getState().areas[0]
-    expect(a).toMatchObject({ name: 'Jardim', emoji: '🌿', period: { type: 'interval', every: 3, unit: 'days' }, lastDone: null, order: 0 })
+    expect(a).toMatchObject({ name: 'Jardim', emoji: '🌿', order: 0 })
+    expect(a.routines).toHaveLength(1)
+    expect(a.routines[0]).toMatchObject({ name: '', period: { type: 'interval', every: 3, unit: 'days' }, lastDone: null })
     expect(screen.getByText('Jardim')).toBeInTheDocument()
   })
 
@@ -186,7 +204,64 @@ describe('Áreas', () => {
     expect(store.getState().areas).toHaveLength(0)
     await user.click(within(dialog).getByRole('button', { name: 'Qua' }))
     await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
-    expect(store.getState().areas[0].period).toEqual({ type: 'weekly', days: [3], time: '21:00' })
+    expect(store.getState().areas[0].routines[0].period).toEqual({ type: 'weekly', days: [3], time: '21:00' })
+  })
+
+  it('uma área pode ter várias rotinas, todas com nome', async () => {
+    const { user, store } = setup()
+    await goTo(user, 'Áreas')
+    await user.click(screen.getByRole('button', { name: /Nova área/ }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByPlaceholderText('Ex.: Quarto'), 'Quarto')
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar rotina' }))
+    // com mais de uma rotina, o nome de todas é obrigatório
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
+    expect(store.getState().areas).toHaveLength(0)
+    expect(within(dialog).getAllByText('Dê um nome à rotina.')).toHaveLength(2)
+    const names = within(dialog).getAllByPlaceholderText('Ex.: Arrumação rápida')
+    await user.type(names[0], 'Arrumação rápida')
+    await user.type(names[1], 'Limpeza geral')
+    const every = within(dialog).getAllByLabelText('Intervalo em dias')
+    await user.clear(every[0])
+    await user.type(every[0], '1')
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
+    const [a] = store.getState().areas
+    expect(a.routines.map((r) => [r.name, r.period])).toEqual([
+      ['Arrumação rápida', { type: 'interval', every: 1, unit: 'days' }],
+      ['Limpeza geral', { type: 'interval', every: 7, unit: 'days' }],
+    ])
+  })
+
+  it('só uma rotina: o nome é opcional e usa o da área; com várias, cada uma tem sua linha na Bora', async () => {
+    const { user, store } = setup((s) => {
+      const q = area('q', 'Quarto', { lastDone: null })
+      q.routines[0].name = 'Limpeza geral'
+      q.routines.push({ ...q.routines[0], id: 'q-r2', name: 'Arrumação rápida', period: { type: 'interval', every: 1, unit: 'days' } })
+      s.areas.push(q, area('c', 'Cozinha', { lastDone: null, order: 1 }))
+    })
+    expect(screen.getByRole('button', { name: 'Checar Quarto · Limpeza geral' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Checar Quarto · Arrumação rápida' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Checar Cozinha' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Checar Quarto · Arrumação rápida' }))
+    const q = store.getState().areas[0]
+    expect(q.routines[1].lastDone).not.toBeNull()
+    expect(q.routines[0].lastDone).toBeNull() // a outra rotina continua pendente
+    expect(screen.getByRole('button', { name: 'Checar Quarto · Limpeza geral' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Checar Quarto · Arrumação rápida' })).not.toBeInTheDocument()
+  })
+
+  it('remover uma rotina deixa a área com a restante', async () => {
+    const { user, store } = setup((s) => {
+      const q = area('q', 'Quarto')
+      q.routines[0].name = 'Limpeza geral'
+      q.routines.push({ ...q.routines[0], id: 'q-r2', name: 'Arrumação rápida' })
+      s.areas.push(q)
+    })
+    await goTo(user, 'Áreas')
+    await user.click(screen.getByRole('button', { name: 'Editar' }))
+    await user.click(screen.getByRole('button', { name: 'Remover rotina 2' }))
+    await user.click(screen.getByRole('button', { name: 'Salvar' }))
+    expect(store.getState().areas[0].routines.map((r) => r.id)).toEqual(['q-r'])
   })
 
   it('excluir pede confirmação; as tarefas ficam sem área e o desfazer devolve tudo', async () => {
@@ -226,10 +301,10 @@ describe('Áreas', () => {
     })
     await goTo(user, 'Áreas')
     await user.click(screen.getAllByRole('button', { name: 'Mandar pra checar' })[0])
-    expect(store.getState().areas.find((a) => a.id === 'a')!.forceDue).toBeTypeOf('number')
+    expect(store.getState().areas.find((a) => a.id === 'a')!.routines[0].forceDue).toBeTypeOf('number')
     expect(screen.getByText('Quarto voltou para A checar')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mandar todas pra checar' }))
-    expect(store.getState().areas.every((a) => a.forceDue)).toBe(true)
+    expect(store.getState().areas.every((a) => a.routines.every((r) => r.forceDue))).toBe(true)
     expect(screen.getByRole('button', { name: 'Mandar todas pra checar' })).toBeDisabled()
   })
 

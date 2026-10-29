@@ -29,7 +29,7 @@ promessa guiou todas as decisões do produto.
 | **Bora**       | A tela do dia: compromissos de hoje, áreas a checar, repriorização das tarefas, tarefas pendentes e o que precisa ser organizado.                                                              |
 | **Tarefas**    | Por área da vida ou na **matriz de priorização** (Fazer, Agendar, Simplificar, Eliminar), com arrastar e soltar.                                                                                     |
 | **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso.                                                                                     |
-| **Áreas**      | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Quando o prazo vence, a área aparece na Bora para ser checada. |
+| **Áreas**      | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Uma área pode ter várias rotinas, cada uma com a própria periodicidade (ex.: Quarto, com arrumação rápida todo dia e limpeza geral toda semana). Quando o prazo de uma rotina vence, ela aparece na Bora para ser checada. |
 | **Coisinhas**  | Listas leves: indicações (filmes, séries, livros) e hobbies para testar.                                                                                                                             |
 
 <p>

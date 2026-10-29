@@ -2,10 +2,10 @@ import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
 import { Flower, IconCheck, IconNote } from '../components/icons'
 import { LinkedTasks, TaskTags } from '../components/taskParts'
-import { acceptsTasks, areaById, areaStatus, sortedAreas } from '../lib/areas'
+import { acceptsTasks, areaById, routineLabel, routineStatus, sortedAreas } from '../lib/areas'
 import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
 import { organizeTasks, pendingTasks } from '../lib/tasks'
-import type { Area, AreaStatus, MissedEvent, Task } from '../lib/types'
+import type { Area, AreaStatus, MissedEvent, Routine, Task } from '../lib/types'
 import { capitalize, fmtDayMonth, parseYmd, rel, ymd } from '../lib/time'
 
 function Ring({ a, st }: { a: Area; st: AreaStatus }) {
@@ -37,7 +37,7 @@ function Ring({ a, st }: { a: Area; st: AreaStatus }) {
   )
 }
 
-function StatusLine({ a, st }: { a: Area; st: AreaStatus }) {
+function StatusLine({ r, st }: { r: Routine; st: AreaStatus }) {
   if (st.invalid) return <span>Sem dias definidos</span>
   if (st.never) return <span className="late">Ainda não checada</span>
   if (st.due) {
@@ -51,20 +51,20 @@ function StatusLine({ a, st }: { a: Area; st: AreaStatus }) {
   return (
     <span>
       Próxima {rel(st.nextAt!)}
-      {a.lastDone ? `, checada ${rel(a.lastDone)}` : ''}
+      {r.lastDone ? `, checada ${rel(r.lastDone)}` : ''}
     </span>
   )
 }
 
-function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
+function AreaRow({ a, r, st }: { a: Area; r: Routine; st: AreaStatus }) {
   const { actions, state, setTab, setUi } = useApp()
   const open = state.tasks.filter((t) => t.areaId === a.id).length
   return (
     <div className={`area-row ${st.due ? 'due' : ''}`}>
       <Ring a={a} st={st} />
       <div className="area-txt">
-        <b>{a.name}</b>
-        <StatusLine a={a} st={st} />
+        <b>{routineLabel(a, r)}</b>
+        <StatusLine r={r} st={st} />
         {acceptsTasks(a) ? (
           <button
             type="button"
@@ -80,8 +80,8 @@ function AreaRow({ a, st }: { a: Area; st: AreaStatus }) {
       </div>
       <button
         className={`check-btn ${st.due ? '' : 'soft'}`}
-        onClick={() => actions.markDone(a.id)}
-        aria-label={`Checar ${a.name}`}
+        onClick={() => actions.markDone(a.id, r.id)}
+        aria-label={`Checar ${routineLabel(a, r)}`}
       >
         <IconCheck />
         <span>Checar</span>
@@ -162,7 +162,9 @@ export function Inicio() {
   const c = useApp()
   const { state, actions, openDialog, setTab, setUi } = c
   const now = Date.now()
-  const areas = sortedAreas(state).map((a) => ({ a, st: areaStatus(a, now) }))
+  const areas = sortedAreas(state).flatMap((a) =>
+    a.routines.map((r) => ({ a, r, st: routineStatus(r, now) })),
+  )
   const due = areas.filter((x) => x.st.due).sort((x, y) => (x.st.since || 0) - (y.st.since || 0))
   const pend = pendingTasks(state)
   const org = organizeTasks(state)
@@ -235,7 +237,7 @@ export function Inicio() {
       </button>
     </div>
   ) : due.length ? (
-    due.map((x) => <AreaRow key={x.a.id} a={x.a} st={x.st} />)
+    due.map((x) => <AreaRow key={x.r.id} a={x.a} r={x.r} st={x.st} />)
   ) : (
     <p className="sub">Todas as áreas estão em dia.</p>
   )
@@ -324,7 +326,7 @@ export function Inicio() {
                 <div className="sec-head">
                   <h2>Áreas a checar</h2>
                   <Count n={due.length} />
-                  <InfoButton text="Mostra as áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
+                  <InfoButton text="Mostra as rotinas das áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
                 </div>
                 {areasNode}
               </div>

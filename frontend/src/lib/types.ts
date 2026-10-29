@@ -15,17 +15,26 @@ interface WeeklyPeriod {
 }
 export type Period = IntervalPeriod | WeeklyPeriod
 
-export interface Area {
+/** Uma tarefa recorrente da área, com a própria periodicidade e a própria última checagem. */
+export interface Routine {
   id: string
+  /** Obrigatório quando a área tem mais de uma rotina; com uma só pode ficar vazio (usa o nome da área). */
   name: string
-  emoji: string
   period: Period
   lastDone: number | null
   history: number[]
   createdAt: number
+  forceDue?: number
+}
+
+export interface Area {
+  id: string
+  name: string
+  emoji: string
+  routines: Routine[]
+  createdAt: number
   order: number
   acceptsTasks?: boolean
-  forceDue?: number
 }
 
 export interface Task {

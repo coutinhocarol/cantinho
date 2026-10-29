@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../app/context'
 import { Flower, IconCheck, IconPlus } from '../components/icons'
 import { TaskTags, dueTag, linkChip, notesTag } from '../components/taskParts'
-import { QUADS, areaById, areaStatus, taskAreas } from '../lib/areas'
+import { QUADS, areaById, areaDue, taskAreas } from '../lib/areas'
 import { isLinked } from '../lib/events'
 import type { QuadId, Task } from '../lib/types'
 
@@ -194,7 +194,7 @@ function Board() {
   // tarefas cuja área foi excluída continuam existindo, numa coluna "Sem área"
   const orphan = state.tasks.some((t) => !areaById(state, t.areaId))
   const cols = [
-    ...areas.map((a) => ({ id: a.id, name: a.name, emoji: a.emoji || '', st: areaStatus(a, now) })),
+    ...areas.map((a) => ({ id: a.id, name: a.name, emoji: a.emoji || '', st: { due: areaDue(a, now) } })),
     ...(orphan ? [{ id: '', name: 'Sem área', emoji: '', st: null }] : []),
   ]
   const inCol = (t: Task, id: string) => (id ? t.areaId === id : !areaById(state, t.areaId))

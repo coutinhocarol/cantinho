@@ -39,17 +39,36 @@ export function normalize(s: AppState, now = new Date()): boolean {
     }
   })
   s.areas.forEach((a) => {
-    // dados antigos podem ter períodos que já não existem
-    const p = (a.period || {}) as unknown as Record<string, unknown>
-    if (p.type === 'monthly') {
-      a.period = { type: 'interval', every: 30, unit: 'days' }
-      ch = true
-    } else if (p.type === 'interval' && p.unit !== 'days') {
-      const every = Number(p.every)
-      const d = p.unit === 'weeks' ? 7 * every : Math.ceil(every / 24)
-      a.period = { type: 'interval', every: Math.max(1, d), unit: 'days' } as Period
+    if (!Array.isArray(a.routines)) {
+      // áreas antigas tinham uma única periodicidade, guardada na própria área
+      const old = a as unknown as Record<string, any>
+      a.routines = [
+        {
+          id: a.id,
+          name: '',
+          period: old.period ?? { type: 'interval', every: 7, unit: 'days' },
+          lastDone: old.lastDone ?? null,
+          history: old.history ?? [],
+          createdAt: old.createdAt ?? Date.now(),
+          ...(old.forceDue ? { forceDue: old.forceDue } : {}),
+        },
+      ]
+      for (const k of ['period', 'lastDone', 'history', 'forceDue']) delete old[k]
       ch = true
     }
+    a.routines.forEach((r) => {
+      // dados antigos podem ter períodos que já não existem
+      const p = (r.period || {}) as unknown as Record<string, unknown>
+      if (p.type === 'monthly') {
+        r.period = { type: 'interval', every: 30, unit: 'days' }
+        ch = true
+      } else if (p.type === 'interval' && p.unit !== 'days') {
+        const every = Number(p.every)
+        const d = p.unit === 'weeks' ? 7 * every : Math.ceil(every / 24)
+        r.period = { type: 'interval', every: Math.max(1, d), unit: 'days' } as Period
+        ch = true
+      }
+    })
   })
   return ch
 }

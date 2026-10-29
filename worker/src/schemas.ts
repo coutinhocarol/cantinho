@@ -16,17 +16,24 @@ const Period = z.object({
   time: opt(z.string()),
 })
 
-const Area = z.object({
+const Routine = z.object({
   id: z.string().min(1).max(64),
-  name: z.string(),
+  name: opt(z.string()),
   period: Period,
-  emoji: opt(z.string()),
   lastDone: opt(num),
   history: opt(z.array(num)),
   createdAt: opt(num),
+  forceDue: opt(num),
+})
+
+const Area = z.object({
+  id: z.string().min(1).max(64),
+  name: z.string(),
+  routines: z.array(Routine).min(1).max(50),
+  emoji: opt(z.string()),
+  createdAt: opt(num),
   order: opt(num),
   acceptsTasks: opt(z.boolean()),
-  forceDue: opt(num),
 })
 
 const Task = z.object({
@@ -95,6 +102,7 @@ export const AppStateSchema = z.object({
 
 export type AppStateInput = z.infer<typeof AppStateSchema>
 export type AreaInput = z.infer<typeof Area>
+export type RoutineInput = z.infer<typeof Routine>
 type TaskInput = z.infer<typeof Task>
 export type EventInput = z.infer<typeof CalEvent>
 

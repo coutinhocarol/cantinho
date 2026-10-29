@@ -104,8 +104,9 @@ Tabelas relacionais no PostgreSQL:
 | Tabela             | Conteúdo                                                                                                                                             |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `users`            | contas (usuário em minúsculas, senha com hash PBKDF2-SHA256 e sal)                                                                                    |
-| `areas`            | nome, emoji, periodicidade (`interval_days` ou `weekly_days` + `weekly_time`), última checagem, ordem                                                |
-| `area_checks`      | histórico de checagens (FK → `areas`, cascade)                                                                                                       |
+| `areas`            | nome, emoji, ordem, se aceita tarefas                                                                                                                |
+| `routines`         | rotinas de uma área: nome, periodicidade (`interval_days` ou `weekly_days` + `weekly_time`), última checagem (FK → `areas`, cascade)                |
+| `area_checks`      | histórico de checagens de cada rotina (FK → `routines`, cascade)                                                                                     |
 | `tasks`            | título, quadrante, prazo, notas. FK → `areas` e → `events` com `ON DELETE SET NULL`: **apagar uma área não apaga as tarefas, elas ficam "sem área"** |
 | `events`           | compromissos (data, horário, dia inteiro, repetição)                                                                                                 |
 | `event_done_dates` | dias concluídos de compromissos que se repetem (FK → `events`)                                                                                       |

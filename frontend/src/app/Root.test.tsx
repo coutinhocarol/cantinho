@@ -61,9 +61,16 @@ const stateWithArea = (name: string): AppState => {
     id: 'a-' + name,
     name,
     emoji: '🏠',
-    period: { type: 'interval', every: 7, unit: 'days' },
-    lastDone: null,
-    history: [],
+    routines: [
+      {
+        id: 'r-' + name,
+        name: '',
+        period: { type: 'interval', every: 7, unit: 'days' },
+        lastDone: null,
+        history: [],
+        createdAt: Date.now(),
+      },
+    ],
     createdAt: Date.now(),
     order: 0,
   })

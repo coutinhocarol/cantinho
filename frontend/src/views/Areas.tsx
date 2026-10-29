@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { useApp } from '../app/context'
 import { Flower, IconCheck, IconGrip, IconPlus, IconSend } from '../components/icons'
-import { acceptsTasks, areaStatus, periodText, sortedAreas } from '../lib/areas'
+import { acceptsTasks, periodText, routineLabel, routineStatus, sortedAreas } from '../lib/areas'
 import { fmtWhen, rel } from '../lib/time'
 
 interface DragData {
@@ -21,7 +21,7 @@ export function Areas() {
   const { state, actions, openDialog, dragging } = useApp()
   const sorted = sortedAreas(state)
   const now = Date.now()
-  const pendCount = sorted.filter((a) => !areaStatus(a, now).due).length
+  const pendCount = sorted.flatMap((a) => a.routines).filter((r) => !routineStatus(r, now).due).length
 
   const gridRef = useRef<HTMLDivElement>(null)
   const drag = useRef<DragData | null>(null)
@@ -213,7 +213,7 @@ export function Areas() {
           ) : (
             <div className="areas-grid" ref={gridRef}>
               {areas.map((a) => {
-                const st = areaStatus(a, now)
+                const multi = a.routines.length > 1
                 const n = state.tasks.filter((t) => t.areaId === a.id).length
                 return (
                   <div
@@ -225,7 +225,7 @@ export function Areas() {
                       <span className="big-emo">{a.emoji || '✨'}</span>
                       <div className="tw:min-w-0">
                         <b>{a.name}</b>
-                        <span className="per">{periodText(a.period)}</span>
+                        {multi ? null : <span className="per">{periodText(a.routines[0]?.period)}</span>}
                       </div>
                       <button
                         type="button"
@@ -243,59 +243,73 @@ export function Areas() {
                         <IconGrip />
                       </button>
                     </div>
+                    {a.routines.map((r) => {
+                      const st = routineStatus(r, now)
+                      return (
+                        <div className="routine" key={r.id}>
+                          {multi ? (
+                            <div className="routine-head">
+                              <b>{r.name}</b>
+                              <span className="per">{periodText(r.period)}</span>
+                            </div>
+                          ) : null}
+                          <dl>
+                            <dt>Situação</dt>
+                            <dd>
+                              {st.due ? (
+                                <span className="chip rose">A checar</span>
+                              ) : (
+                                <span className="chip green">Em dia</span>
+                              )}
+                            </dd>
+                            <dt>Última checagem</dt>
+                            <dd title={r.lastDone ? fmtWhen(r.lastDone) : undefined}>
+                              {r.lastDone ? rel(r.lastDone) : 'ainda não checada'}
+                            </dd>
+                            {st.due ? (
+                              <>
+                                <dt>Pendente desde</dt>
+                                <dd title={st.since ? fmtWhen(st.since) : undefined}>
+                                  {st.since ? rel(st.since) : 'o início'}
+                                </dd>
+                              </>
+                            ) : (
+                              <>
+                                <dt>Fica pendente</dt>
+                                <dd title={st.nextAt ? fmtWhen(st.nextAt) : undefined}>
+                                  {st.nextAt ? rel(st.nextAt) : '—'}
+                                </dd>
+                              </>
+                            )}
+                          </dl>
+                          <div className="acts">
+                            {st.due ? (
+                              <button
+                                className="check-btn wide"
+                                aria-label={`Checar ${routineLabel(a, r)}`}
+                                onClick={() => actions.markDone(a.id, r.id)}
+                              >
+                                <IconCheck />
+                                <span>Checar</span>
+                              </button>
+                            ) : (
+                              <button className="btn bora" onClick={() => actions.forceDue(a.id, r.id)}>
+                                <IconSend />
+                                Mandar pra checar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                     <dl>
-                      <dt>Situação</dt>
-                      <dd>
-                        {st.due ? (
-                          <span className="chip rose">A checar</span>
-                        ) : (
-                          <span className="chip green">Em dia</span>
-                        )}
-                      </dd>
-                      <dt>Última checagem</dt>
-                      <dd title={a.lastDone ? fmtWhen(a.lastDone) : undefined}>
-                        {a.lastDone ? rel(a.lastDone) : 'ainda não checada'}
-                      </dd>
-                      {st.due ? (
-                        <>
-                          <dt>Pendente desde</dt>
-                          <dd title={st.since ? fmtWhen(st.since) : undefined}>
-                            {st.since ? rel(st.since) : 'o início'}
-                          </dd>
-                        </>
-                      ) : (
-                        <>
-                          <dt>Fica pendente</dt>
-                          <dd title={st.nextAt ? fmtWhen(st.nextAt) : undefined}>
-                            {st.nextAt ? rel(st.nextAt) : '—'}
-                          </dd>
-                        </>
-                      )}
                       <dt>Tarefas</dt>
                       <dd>{acceptsTasks(a) ? `${n}` : 'Não aceita tarefas'}</dd>
                     </dl>
                     <div className="acts">
-                      <button
-                        className="btn"
-                        onClick={() => openDialog({ kind: 'area', id: a.id })}
-                      >
+                      <button className="btn" onClick={() => openDialog({ kind: 'area', id: a.id })}>
                         Editar
                       </button>
-                      {st.due ? (
-                        <button
-                          className="check-btn wide"
-                          aria-label={`Checar ${a.name}`}
-                          onClick={() => actions.markDone(a.id)}
-                        >
-                          <IconCheck />
-                          <span>Checar</span>
-                        </button>
-                      ) : (
-                        <button className="btn bora" onClick={() => actions.forceDue(a.id)}>
-                          <IconSend />
-                          Mandar pra checar
-                        </button>
-                      )}
                     </div>
                   </div>
                 )

@@ -1,4 +1,4 @@
-import type { Area, AppState, AreaStatus, Period, Quad, QuadId } from './types'
+import type { Area, AppState, AreaStatus, Period, Quad, QuadId, Routine } from './types'
 import { DAY, WD, WD_FULL, atTime, clamp } from './time'
 
 export const QUADS: Quad[] = [
@@ -40,11 +40,11 @@ function occurrences(p: Period, now: number): number[] {
   return out.sort((a, b) => a - b)
 }
 
-/** Situação de uma área: pendente ("A checar"), progresso 0..1 e próximos marcos. */
-export function areaStatus(a: Area, now = Date.now()): AreaStatus {
-  const p = a.period
-  if (a.forceDue) return { due: true, progress: 1, since: a.forceDue, forced: true }
-  const last = a.lastDone || null
+/** Situação de uma rotina: pendente ("A checar"), progresso 0..1 e próximos marcos. */
+export function routineStatus(r: Routine, now = Date.now()): AreaStatus {
+  const p = r.period
+  if (r.forceDue) return { due: true, progress: 1, since: r.forceDue, forced: true }
+  const last = r.lastDone || null
   if (p.type === 'interval') {
     const ms = DAY * Math.max(1, p.every || 1)
     if (!last) return { due: true, progress: 1, never: true }
@@ -64,12 +64,22 @@ export function areaStatus(a: Area, now = Date.now()): AreaStatus {
     if (t <= now) prev = t
     else if (next == null) next = t
   }
-  const covered = prev == null || (last ? last >= prev : (a.createdAt || 0) >= prev)
+  const covered = prev == null || (last ? last >= prev : (r.createdAt || 0) >= prev)
   const due = !covered
-  const start = prev ?? (last || a.createdAt || now)
+  const start = prev ?? (last || r.createdAt || now)
   const progress = due ? 1 : next ? clamp((now - start) / (next - start)) : 0
   return { due, progress, nextAt: due ? prev : next, since: due ? prev : null }
 }
+
+/** Nome mostrado de uma rotina: o da área, seguido do nome da rotina quando a área tem várias. */
+export const routineLabel = (a: Area, r: Routine): string =>
+  a.routines.length > 1 && r.name ? `${a.name} · ${r.name}` : a.name
+
+export const areaDue = (a: Area, now = Date.now()): boolean =>
+  a.routines.some((r) => routineStatus(r, now).due)
+
+export const routineById = (a: Area | undefined, id: string): Routine | undefined =>
+  a?.routines.find((r) => r.id === id)
 
 export const sortedAreas = (s: AppState): Area[] =>
   [...s.areas].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
