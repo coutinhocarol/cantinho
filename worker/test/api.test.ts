@@ -203,6 +203,13 @@ describe('/api/state', () => {
     ])
   })
 
+  it('compromisso quinzenal é aceito', async () => {
+    const s = sampleState()
+    s.events[0].repeat = 'biweekly'
+    expect((await client.put('/api/state', s)).status).toBe(200)
+    expect((await client.get('/api/state')).body.events[0].repeat).toBe('biweekly')
+  })
+
   it('tarefa de área inexistente é recusada e nada é salvo', async () => {
     await client.put('/api/state', sampleState())
     const bad = sampleState()

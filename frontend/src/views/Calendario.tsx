@@ -300,7 +300,7 @@ function Rotina() {
   const todayIdx = (new Date().getDay() + 6) % 7
   const reps = (state.events || []).filter((e) => e.date && isRepeating(e))
   const daily = reps.filter((e) => e.repeat === 'daily')
-  const weekly = reps.filter((e) => e.repeat === 'weekly')
+  const weekly = reps.filter((e) => e.repeat === 'weekly' || e.repeat === 'biweekly')
   const others = reps.filter((e) => e.repeat === 'monthly' || e.repeat === 'yearly').sort(rotinaSort)
   const perDay = ROTINA_DAYS.map((_, i) =>
     [...daily, ...weekly.filter((e) => rotinaDay(e) === i)].sort(rotinaSort),
@@ -315,7 +315,7 @@ function Rotina() {
   if (!reps.length)
     return (
       <p className="wk-empty">
-        Nenhum compromisso recorrente ainda. Ao criar um compromisso, escolha Todo dia ou Toda semana
+        Nenhum compromisso recorrente ainda. Ao criar um compromisso, escolha Todo dia, Toda semana ou Quinzenal
         em Repetir e ele aparece aqui.
       </p>
     )

@@ -158,6 +158,13 @@ describe('occursOn', () => {
     expect(occursOn(e, '2026-10-28')).toBe(true)
     expect(occursOn(e, '2026-10-27')).toBe(false)
   })
+  it('quinzenal ocorre a cada 14 dias a partir da origem', () => {
+    const e = ev({ repeat: 'biweekly', origin: '2026-10-21' })
+    expect(occursOn(e, '2026-10-21')).toBe(true)
+    expect(occursOn(e, '2026-10-28')).toBe(false)
+    expect(occursOn(e, '2026-11-04')).toBe(true)
+    expect(occursOn(e, '2026-11-05')).toBe(false)
+  })
   it('mensal em dia 31 cai no último dia dos meses curtos', () => {
     const e = ev({ repeat: 'monthly', date: '2026-01-31', origin: '2026-01-31' })
     expect(occursOn(e, '2026-02-28')).toBe(true)
