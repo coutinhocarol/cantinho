@@ -62,6 +62,8 @@ export interface Client {
   put(path: string, body?: unknown): ReturnType<Client['request']>
   post(path: string, body?: unknown): ReturnType<Client['request']>
   cookies: Map<string, string>
+  /** Envia/lê bytes (fotos), com o mesmo jar de cookies. */
+  raw(method: string, path: string, body?: Uint8Array, contentType?: string): Promise<{ status: number; bytes: Uint8Array; headers: Headers }>
 }
 
 /** Cliente HTTP de teste, com o próprio "jar" de cookies. */
@@ -83,8 +85,16 @@ export function makeClient(db: TestDb): Client {
     const text = await res.text()
     return { status: res.status, body: text ? JSON.parse(text) : null, headers: res.headers }
   }
+  const raw: Client['raw'] = async (method, path, body, contentType) => {
+    const headers = new Headers()
+    if (contentType) headers.set('Content-Type', contentType)
+    if (cookies.size) headers.set('Cookie', [...cookies].map(([k, v]) => `${k}=${v}`).join('; '))
+    const res = await app.request(path, { method, headers, body }, db.env)
+    return { status: res.status, bytes: new Uint8Array(await res.arrayBuffer()), headers: res.headers }
+  }
   return {
     request,
+    raw,
     cookies,
     get: (p) => request('GET', p),
     put: (p, b) => request('PUT', p, b),

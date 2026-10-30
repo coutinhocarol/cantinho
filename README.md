@@ -31,7 +31,7 @@ promessa guiou todas as decisões do produto.
 | **Calendário** | Visão de mês e de semana, com compromissos únicos ou que se repetem. Tarefas podem ser ligadas a um compromisso.                                                                                     |
 | **Áreas**      | Partes da rotina que pedem atenção periódica: "limpeza da casa a cada 3 dias", "finanças a cada 30 dias", "estudar toda sexta às 7h". Uma área pode ter várias rotinas, cada uma com a própria periodicidade (ex.: Quarto, com arrumação rápida todo dia e limpeza geral toda semana). Quando o prazo de uma rotina vence, ela aparece na Bora para ser checada. |
 | **Coisinhas**  | Listas leves: indicações (filmes, séries, livros) e hobbies para testar.                                                                                                                             |
-| **Notas**      | Páginas de texto, como no Notion: crie, busque e edite anotações. O que você digita é guardado sozinho.                                                                                              |
+| **Notas**      | Páginas de texto, como no Notion: crie, busque e edite anotações, e cole fotos (Ctrl+V) no meio do texto. Tudo é guardado sozinho.                                                                   |
 
 <p>
   <img src="docs/img/bora-celular-escuro.png" alt="Bora no celular, modo escuro" width="300">

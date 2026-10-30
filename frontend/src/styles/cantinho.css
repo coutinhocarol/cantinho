@@ -562,7 +562,15 @@ textarea.field{min-height:72px;resize:vertical}
 .notes-bar .spacer{flex:1}
 .notes-back{display:none}
 .notes-title{font-size:22px;font-weight:600}
-textarea.notes-body{min-height:max(360px,calc(100vh - 330px));field-sizing:content;resize:none;padding:16px 18px;font-size:16px;line-height:1.6}
+.notes-doc{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 0;min-height:max(360px,calc(100vh - 330px))}
+.notes-doc:focus-within{border-color:var(--rose)}
+textarea.note-block{border:0;background:transparent;outline:none;resize:none;field-sizing:content;min-height:2.4em;width:100%;padding:6px 18px;font-size:16px;line-height:1.6}
+textarea.note-block.last{flex:1 1 auto}
+.note-img{position:relative;margin:6px 18px;max-width:max-content}
+.note-img img{display:block;max-width:100%;max-height:70vh;border-radius:12px;border:1px solid var(--line)}
+.note-img-x{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:20px;line-height:1;cursor:pointer;display:grid;place-items:center;opacity:0}
+.note-img:hover .note-img-x,.note-img-x:focus-visible{opacity:1}
+@media (hover:none){.note-img-x{opacity:1}}
 .notes-hint{margin:8px 0}
 @media (max-width:759px){
   .notes-wrap{grid-template-columns:minmax(0,1fr)}

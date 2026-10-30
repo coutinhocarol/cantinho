@@ -9,6 +9,9 @@ import type { AppStateInput, EventInput, RoutineInput } from './schemas'
 
 export class StateError extends Error {}
 
+/** Referência a uma foto dentro do texto da nota. */
+export const IMG_REF = /\[\[img:([A-Za-z0-9-]{1,64})\]\]/g
+
 const LIST_NAMES = ['indicacoes', 'hobbies', 'compras'] as const
 
 // ---------- conversões ----------
@@ -181,6 +184,13 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
     await tx`insert into notes ${tx(noteRows)}
       on conflict (user_id, id) do update set title = excluded.title, body = excluded.body,
         created_at = excluded.created_at, updated_at = excluded.updated_at`
+
+  // fotos que nenhuma nota usa mais (as de menos de um dia ficam: podem estar à espera do próximo salvamento)
+  const used = [...new Set(st.notes.flatMap((n) => [...n.body.matchAll(IMG_REF)].map((m) => m[1])))]
+  if (used.length)
+    await tx`delete from note_images where user_id = ${userId} and id not in ${tx(used)}
+      and created_at < now() - interval '1 day'`
+  else await tx`delete from note_images where user_id = ${userId} and created_at < now() - interval '1 day'`
 
   // compromissos que passaram sem ser marcados (aguardam confirmação de exclusão)
   await tx`delete from missed_events where user_id = ${userId}`

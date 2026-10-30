@@ -177,6 +177,51 @@ export function createApp(deps: Deps) {
     return c.json({ updatedAt: new Date().toISOString() })
   })
 
+  // ---------- fotos das notas ----------
+  const IMAGE_TYPES: Record<string, (b: Uint8Array) => boolean> = {
+    'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+    'image/png': (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47,
+    'image/webp': (b) => b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57 && b[9] === 0x45,
+    'image/gif': (b) => b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46,
+  }
+  const MAX_IMAGE_BYTES = 3_000_000
+  const MAX_IMAGES = 500
+
+  app.post('/api/images', requireUser, async (c) => {
+    const mime = (c.req.header('content-type') ?? '').split(';')[0].trim().toLowerCase()
+    const isType = IMAGE_TYPES[mime]
+    if (!isType) return json(c, 415, 'Formato de imagem não aceito (use JPEG, PNG, WebP ou GIF)')
+    const declared = Number(c.req.header('content-length') ?? 0)
+    if (declared > MAX_IMAGE_BYTES) return json(c, 413, 'Imagem grande demais (máximo 3 MB)')
+    const bytes = new Uint8Array(await c.req.arrayBuffer())
+    if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) return json(c, 413, 'Imagem grande demais (máximo 3 MB)')
+    if (!isType(bytes)) return json(c, 415, 'O arquivo não é uma imagem válida')
+    const id = crypto.randomUUID()
+    const ok = await tx(c, async (t) => {
+      const [{ n }] = await t<{ n: number }[]>`select count(*)::int as n from note_images where user_id = ${c.var.user.id}`
+      if (n >= MAX_IMAGES) return false
+      await t`insert into note_images (user_id, id, mime, data) values (${c.var.user.id}, ${id}, ${mime}, ${bytes})`
+      return true
+    })
+    if (!ok) return json(c, 403, 'Você chegou ao limite de fotos nas notas. Apague notas com fotos que não usa mais.', 'images_limit')
+    return c.json({ id }, 201)
+  })
+
+  app.get('/api/images/:id', requireUser, async (c) => {
+    const id = c.req.param('id') ?? ''
+    if (!/^[A-Za-z0-9-]{1,64}$/.test(id)) return json(c, 404, 'Não encontrado')
+    const [img] = await tx(
+      c,
+      (t) => t<{ mime: string; data: Uint8Array }[]>`select mime, data from note_images where user_id = ${c.var.user.id} and id = ${id}`,
+    )
+    if (!img) return json(c, 404, 'Não encontrado')
+    return c.body(new Uint8Array(img.data), 200, {
+      'Content-Type': img.mime,
+      'Cache-Control': 'private, max-age=31536000, immutable',
+      'X-Content-Type-Options': 'nosniff',
+    })
+  })
+
   app.notFound((c) => c.json({ detail: 'Não encontrado' }, 404))
   app.onError((e, c) => {
     console.error(e)

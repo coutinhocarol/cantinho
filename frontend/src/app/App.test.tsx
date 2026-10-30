@@ -1,4 +1,4 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import type { StateApi } from '../lib/api'
@@ -7,6 +7,12 @@ import { LS_KEY, Store } from '../lib/store'
 import type { AppState, Area, CalEvent, Routine, Task } from '../lib/types'
 import { DAY, ymd } from '../lib/time'
 import App from './App'
+
+vi.mock('../lib/images', () => ({
+  prepareImage: vi.fn(async (f: Blob) => f),
+  uploadImage: vi.fn(async () => 'img-1'),
+  imageUrl: (id: string) => `/api/images/${id}`,
+}))
 
 const now = () => Date.now()
 
@@ -600,6 +606,29 @@ describe('Notas', () => {
     const [n] = store.getState().notes
     expect(n).toMatchObject({ title: 'Ideias', body: 'primeira linha\nsegunda linha' })
     expect(screen.getByRole('button', { name: /Ideias/ })).toBeInTheDocument()
+  })
+
+  it('colar uma foto no meio do texto a coloca na posição do cursor', async () => {
+    const { user, store } = setup((s) => {
+      s.notes.push({ id: 'n1', title: 'Viagem', body: 'antes depois', createdAt: 1, updatedAt: 1 })
+    })
+    await goTo(user, 'Notas')
+    await user.click(screen.getByRole('button', { name: /Viagem/ }))
+    const box = screen.getByLabelText('Texto da nota') as HTMLTextAreaElement
+    box.focus()
+    box.setSelectionRange(6, 6)
+    const file = new File([new Uint8Array([1, 2, 3])], 'foto.png', { type: 'image/png' })
+    await act(async () => {
+      fireEvent.paste(box, { clipboardData: { files: [file], getData: () => '' } })
+    })
+    expect(await screen.findByAltText('Foto da nota')).toHaveAttribute('src', '/api/images/img-1')
+    expect(store.getState().notes[0].body).toBe('antes \n[[img:img-1]]\ndepois')
+    expect(screen.getByLabelText('Texto da nota')).toHaveValue('antes ')
+    expect(screen.getByLabelText('Continuação do texto da nota')).toHaveValue('depois')
+    // remover a foto junta o texto de volta
+    await user.click(screen.getByRole('button', { name: 'Remover foto' }))
+    expect(store.getState().notes[0].body).toBe('antes \ndepois')
+    expect(screen.queryByAltText('Foto da nota')).not.toBeInTheDocument()
   })
 
   it('busca filtra por título e texto; excluir tem desfazer', async () => {

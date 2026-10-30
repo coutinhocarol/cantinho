@@ -225,6 +225,54 @@ describe('/api/state', () => {
     expect((await client.put('/api/state', s)).status).toBe(422)
   })
 
+  describe('fotos das notas', () => {
+    const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3, 4])
+    const upload = async (c: Client, bytes = png, type = 'image/png') =>
+      c.raw('POST', '/api/images', bytes, type)
+    const idOf = (r: { bytes: Uint8Array }) => JSON.parse(new TextDecoder().decode(r.bytes)).id as string
+
+    it('guarda e devolve a mesma imagem, com o tipo certo', async () => {
+      const up = await upload(client)
+      expect(up.status).toBe(201)
+      const got = await client.raw('GET', `/api/images/${idOf(up)}`)
+      expect(got.status).toBe(200)
+      expect(got.headers.get('content-type')).toBe('image/png')
+      expect(got.headers.get('cache-control')).toContain('private')
+      expect([...got.bytes]).toEqual([...png])
+    })
+
+    it('recusa tipo desconhecido, conteúdo que não é imagem e arquivo grande', async () => {
+      expect((await upload(client, png, 'text/html')).status).toBe(415)
+      expect((await upload(client, new Uint8Array([1, 2, 3, 4, 5]), 'image/png')).status).toBe(415)
+      const big = new Uint8Array(3_000_001)
+      big.set(png)
+      expect((await upload(client, big)).status).toBe(413)
+    })
+
+    it('exige login e cada usuário só vê as próprias fotos', async () => {
+      const id = idOf(await upload(client))
+      expect((await makeClient(db).raw('GET', `/api/images/${id}`)).status).toBe(401)
+      expect((await makeClient(db).raw('POST', '/api/images', png, 'image/png')).status).toBe(401)
+      const bia = await loggedIn(db, 'bia')
+      expect((await bia.raw('GET', `/api/images/${id}`)).status).toBe(404)
+    })
+
+    it('ao salvar, apaga fotos antigas que nenhuma nota usa e mantém as usadas e as recentes', async () => {
+      const used = idOf(await upload(client))
+      const orphan = idOf(await upload(client))
+      const fresh = idOf(await upload(client))
+      await db.run((t) => t`update note_images set created_at = now() - interval '2 days' where id in ${t([used, orphan])}`)
+      const s = sampleState()
+      s.notes[0].body = `texto
+[[img:${used}]]
+mais texto`
+      expect((await client.put('/api/state', s)).status).toBe(200)
+      expect((await client.raw('GET', `/api/images/${used}`)).status).toBe(200)
+      expect((await client.raw('GET', `/api/images/${orphan}`)).status).toBe(404)
+      expect((await client.raw('GET', `/api/images/${fresh}`)).status).toBe(200)
+    })
+  })
+
   it('tarefa de área inexistente é recusada e nada é salvo', async () => {
     await client.put('/api/state', sampleState())
     const bad = sampleState()
