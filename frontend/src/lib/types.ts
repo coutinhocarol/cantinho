@@ -86,12 +86,22 @@ export interface ListItem {
   note?: string
 }
 
+/** Página de anotações em texto. */
+export interface Note {
+  id: string
+  title: string
+  body: string
+  createdAt: number
+  updatedAt: number
+}
+
 export interface AppState {
   v: number
   areas: Area[]
   tasks: Task[]
   events: CalEvent[]
   lists: Record<ListId, ListItem[]>
+  notes: Note[]
   missed: MissedEvent[]
   /** Último dia (aaaa-mm-dd) em que as tarefas foram repriorizadas na matriz. */
   reprioDate: string

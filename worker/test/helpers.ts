@@ -170,6 +170,9 @@ export const sampleState = () => ({
     hobbies: [{ id: 'h1', title: 'Cerâmica', createdAt: 1729000000001 }],
     compras: [],
   },
+  notes: [
+    { id: 'n1', title: 'Ideias', body: 'primeira linha\nsegunda linha', createdAt: 1729000000000, updatedAt: 1729100000000 },
+  ],
   missed: [
     {
       id: 'e0:2026-10-18', eventId: 'e0', title: 'Dentista', date: '2026-10-18', allDay: false, start: '15:00',

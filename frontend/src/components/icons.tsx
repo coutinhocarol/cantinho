@@ -79,6 +79,12 @@ export const TAB_ICONS: Record<string, React.ReactNode> = {
       <polygon points="12 2.8 14.9 8.7 21.4 9.6 16.7 14.2 17.8 20.7 12 17.6 6.2 20.7 7.3 14.2 2.6 9.6 9.1 8.7 12 2.8" />
     </svg>
   ),
+  notas: (
+    <svg {...base} strokeWidth="2">
+      <path d="M6 3h9l4 4v14H6z" />
+      <path d="M14 3v5h5M9 13h7M9 17h5" />
+    </svg>
+  ),
   areas: (
     <svg {...base} strokeWidth="2">
       <circle cx="12" cy="12" r="3" />

@@ -1,0 +1,14 @@
+-- Aba Notas: páginas de texto do usuário.
+
+CREATE TABLE notes (
+	user_id UUID NOT NULL,
+	id VARCHAR(64) NOT NULL,
+	title TEXT DEFAULT '' NOT NULL,
+	body TEXT DEFAULT '' NOT NULL,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+	PRIMARY KEY (user_id, id),
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+ALTER TABLE notes ENABLE ROW LEVEL SECURITY;

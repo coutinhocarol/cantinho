@@ -587,6 +587,42 @@ describe('Calendário', () => {
   })
 })
 
+describe('Notas', () => {
+  it('sem notas mostra o convite; criar abre o editor e guarda título e texto', async () => {
+    const { user, store } = setup()
+    await goTo(user, 'Notas')
+    expect(screen.getByText('Nenhuma nota ainda')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Nova nota/ }))
+    expect(store.getState().notes).toHaveLength(1)
+    await user.type(screen.getByLabelText('Título da nota'), 'Ideias')
+    await user.type(screen.getByLabelText('Texto da nota'), 'primeira linha{Enter}segunda linha')
+    await user.tab() // sair do campo guarda na hora
+    const [n] = store.getState().notes
+    expect(n).toMatchObject({ title: 'Ideias', body: 'primeira linha\nsegunda linha' })
+    expect(screen.getByRole('button', { name: /Ideias/ })).toBeInTheDocument()
+  })
+
+  it('busca filtra por título e texto; excluir tem desfazer', async () => {
+    const { user, store } = setup((s) => {
+      s.notes.push(
+        { id: 'n1', title: 'Receitas', body: 'bolo de cenoura', createdAt: 1, updatedAt: 3 },
+        { id: 'n2', title: 'Viagem', body: 'passagens', createdAt: 2, updatedAt: 2 },
+      )
+    })
+    await goTo(user, 'Notas')
+    expect(screen.getAllByRole('button', { name: /Receitas|Viagem/ })).toHaveLength(2)
+    await user.type(screen.getByLabelText('Buscar nas notas'), 'cenoura')
+    expect(screen.getByRole('button', { name: /Receitas/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Viagem/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Receitas/ }))
+    expect(screen.getByLabelText('Texto da nota')).toHaveValue('bolo de cenoura')
+    await user.click(screen.getByRole('button', { name: 'Excluir' }))
+    expect(store.getState().notes.map((n) => n.id)).toEqual(['n2'])
+    await user.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(store.getState().notes.map((n) => n.id).sort()).toEqual(['n1', 'n2'])
+  })
+})
+
 describe('Coisinhas', () => {
   it('adiciona item pelo Enter, conclui e desfaz', async () => {
     const { user, store } = setup()

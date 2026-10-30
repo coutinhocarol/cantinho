@@ -9,6 +9,7 @@ export const emptyState = (): AppState => ({
   tasks: [],
   events: [],
   lists: { indicacoes: [], hobbies: [], compras: [] },
+  notes: [],
   missed: [],
   reprioDate: '',
 })
@@ -24,6 +25,7 @@ export function normalize(s: AppState, now = new Date()): boolean {
   LIST_IDS.forEach((k) => {
     if (!Array.isArray(s.lists[k])) s.lists[k] = []
   })
+  if (!Array.isArray(s.notes)) s.notes = []
   if (!Array.isArray(s.missed)) s.missed = []
   if (typeof s.reprioDate !== 'string') s.reprioDate = ''
   const before = s.events.length
@@ -79,6 +81,7 @@ export const hasData = (st: AppState | null | undefined): boolean =>
     (st.areas || []).length ||
     (st.tasks || []).length ||
     (st.events || []).length ||
+    (st.notes || []).length ||
     Object.values(st.lists || {}).some((a) => (a || []).length)
   )
 
@@ -94,6 +97,11 @@ export function mergeLocalInto(remote: AppState, local: AppState): AppState {
       if (!have.has(x.id)) arr.push(x)
     })
   }
+  out.notes = out.notes || []
+  const haveNotes = ids(out.notes)
+  ;(local.notes || []).forEach((x) => {
+    if (!haveNotes.has(x.id)) out.notes.push(x)
+  })
   out.missed = out.missed || []
   const haveMissed = ids(out.missed)
   ;(local.missed || []).forEach((x) => {

@@ -61,7 +61,7 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   }
 
   /** Apaga as linhas do usuário cujo id não veio no estado. */
-  const prune = async (table: 'tasks' | 'events' | 'areas' | 'routines' | 'list_items', keep: Set<string>) => {
+  const prune = async (table: 'tasks' | 'events' | 'areas' | 'routines' | 'notes' | 'list_items', keep: Set<string>) => {
     const rows = await tx<{ id: string }[]>`select id from ${tx(table)} where user_id = ${userId}`
     const gone = rows.map((r) => r.id).filter((id) => !keep.has(id))
     if (gone.length) await tx`delete from ${tx(table)} where user_id = ${userId} and id in ${tx(gone)}`
@@ -70,6 +70,7 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   await prune('events', eventIds)
   await prune('areas', areaIds)
   await prune('routines', routineIds)
+  await prune('notes', new Set(st.notes.map((n) => n.id)))
 
   // compromissos
   const eventRows = st.events.map((e) => eventRow(userId, e))
@@ -167,6 +168,20 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
       on conflict (user_id, id) do update set list_name = excluded.list_name, title = excluded.title,
         kind = excluded.kind, note = excluded.note, created_at = excluded.created_at`
 
+  // notas
+  const noteRows = st.notes.map((n) => ({
+    user_id: userId,
+    id: n.id,
+    title: n.title,
+    body: n.body,
+    created_at: ts(n.createdAt) ?? new Date(),
+    updated_at: ts(n.updatedAt) ?? ts(n.createdAt) ?? new Date(),
+  }))
+  if (noteRows.length)
+    await tx`insert into notes ${tx(noteRows)}
+      on conflict (user_id, id) do update set title = excluded.title, body = excluded.body,
+        created_at = excluded.created_at, updated_at = excluded.updated_at`
+
   // compromissos que passaram sem ser marcados (aguardam confirmação de exclusão)
   await tx`delete from missed_events where user_id = ${userId}`
   const missedRows = st.missed.map((m) => ({
@@ -219,7 +234,7 @@ const round = (v: number | null) => (v == null ? null : Math.round(v))
 
 /** Estado completo no formato do app, ou `null` se nada foi salvo ainda. */
 export async function loadState(tx: Sql, userId: string) {
-  const [areas, routines, checks, tasks, events, doneDates, items, missed, [userState]] = await Promise.all([
+  const [areas, routines, checks, tasks, events, doneDates, items, notes, missed, [userState]] = await Promise.all([
     tx<Record<string, any>[]>`select id, name, emoji, accepts_tasks, sort_order,
         ${tx.unsafe(ms('created_at'))} as created_at
       from areas where user_id = ${userId} order by sort_order, created_at`,
@@ -241,6 +256,9 @@ export async function loadState(tx: Sql, userId: string) {
       from event_done_dates where user_id = ${userId} order by done_date`,
     tx<Record<string, any>[]>`select id, list_name, title, kind, note, ${tx.unsafe(ms('created_at'))} as created_at
       from list_items where user_id = ${userId} order by created_at, id`,
+    tx<Record<string, any>[]>`select id, title, body, ${tx.unsafe(ms('created_at'))} as created_at,
+        ${tx.unsafe(ms('updated_at'))} as updated_at
+      from notes where user_id = ${userId} order by created_at, id`,
     tx<Record<string, any>[]>`select id, event_id, title, ${tx.unsafe(iso('date'))} as date, all_day,
         ${tx.unsafe(hhmm('start_time'))} as start_time, ${tx.unsafe(hhmm('end_time'))} as end_time,
         repeat, notes, task_ids
@@ -318,6 +336,13 @@ export async function loadState(tx: Sql, userId: string) {
       createdAt: round(e.created_at),
     })),
     lists,
+    notes: notes.map((n) => ({
+      id: n.id,
+      title: n.title,
+      body: n.body,
+      createdAt: round(n.created_at),
+      updatedAt: round(n.updated_at),
+    })),
     missed: missed.map((m) => ({
       id: m.id,
       eventId: m.event_id,

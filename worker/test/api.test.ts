@@ -58,6 +58,7 @@ describe('/api/state', () => {
     expect(e1.doneDates).toEqual(['2026-10-27', '2026-11-03'])
     expect([e2.allDay, e2.start, e2.end, e2.notes]).toEqual([true, '', '', 'sem trabalho'])
 
+    expect(saved.notes).toEqual(sampleState().notes)
     expect(saved.lists.hobbies[0].title).toBe('Cerâmica')
     expect(saved.missed).toEqual(sampleState().missed)
     expect(saved.reprioDate).toBe('2026-10-19')
@@ -101,6 +102,7 @@ describe('/api/state', () => {
     s.tasks = [s.tasks[1]]
     s.events = [s.events[1]]
     s.lists.hobbies = []
+    s.notes = []
     s.missed = []
     s.areas[0].routines[0].history = [1729300000000]
     expect((await client.put('/api/state', s)).status).toBe(200)
@@ -108,6 +110,7 @@ describe('/api/state', () => {
     expect(saved.tasks.map((t: any) => t.id)).toEqual(['t2'])
     expect(saved.events.map((e: any) => e.id)).toEqual(['e2'])
     expect(saved.lists.hobbies).toEqual([])
+    expect(saved.notes).toEqual([])
     expect(saved.missed).toEqual([])
     expect(saved.areas[0].routines[0].history).toEqual([1729300000000])
     expect(await count('event_done_dates')).toBe(0)
@@ -208,6 +211,18 @@ describe('/api/state', () => {
     s.events[0].repeat = 'biweekly'
     expect((await client.put('/api/state', s)).status).toBe(200)
     expect((await client.get('/api/state')).body.events[0].repeat).toBe('biweekly')
+  })
+
+  it('notas: editar, adicionar e recusar texto grande demais', async () => {
+    await client.put('/api/state', sampleState())
+    const s = sampleState()
+    s.notes[0].body = 'novo texto'
+    s.notes.push({ id: 'n2', title: '', body: '', createdAt: 1729200000000, updatedAt: 1729200000000 })
+    expect((await client.put('/api/state', s)).status).toBe(200)
+    const notes = (await client.get('/api/state')).body.notes
+    expect(notes.map((n: any) => [n.id, n.body])).toEqual([['n1', 'novo texto'], ['n2', '']])
+    s.notes[0].body = 'x'.repeat(200_001)
+    expect((await client.put('/api/state', s)).status).toBe(422)
   })
 
   it('tarefa de área inexistente é recusada e nada é salvo', async () => {

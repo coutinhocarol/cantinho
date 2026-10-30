@@ -1,6 +1,6 @@
 import { areaById, routineById, routineLabel, routineStatus } from './areas'
 import type { Store } from './store'
-import type { Area, AppState, CalEvent, ListId, ListItem, Period, Task } from './types'
+import type { Area, AppState, CalEvent, ListId, ListItem, Note, Period, Task } from './types'
 import { DAY, fmtDayMonth, fmtWhen, parseYmd, uid, ymd } from './time'
 
 type ToastFn = (msg: string, undo?: () => void) => void
@@ -17,6 +17,9 @@ export interface Actions {
   forceAll(): void
   forceDue(areaId: string, routineId: string): void
   reorderAreas(ids: string[]): void
+  addNote(): string
+  updateNote(id: string, patch: Partial<Pick<Note, 'title' | 'body'>>): void
+  deleteNote(id: string): void
   addExamples(): void
 }
 
@@ -236,6 +239,36 @@ export function createActions(store: Store, toast: ToastFn): Actions {
         ids.forEach((id, i) => {
           const a = areaById(d, id)
           if (a) a.order = i
+        }),
+      )
+    },
+
+    addNote() {
+      const now = Date.now()
+      const note: Note = { id: uid(), title: '', body: '', createdAt: now, updatedAt: now }
+      commit((d) => void d.notes.push(note))
+      return note.id
+    },
+
+    updateNote(id, patch) {
+      const n = get().notes.find((x) => x.id === id)
+      if (!n || (patch.title ?? n.title) === n.title && (patch.body ?? n.body) === n.body) return
+      commit((d) => {
+        const x = d.notes.find((y) => y.id === id)!
+        Object.assign(x, patch, { updatedAt: Date.now() })
+      })
+    },
+
+    deleteNote(id) {
+      const n = get().notes.find((x) => x.id === id)
+      if (!n) return
+      const copy: Note = { ...n }
+      commit((d) => {
+        d.notes = d.notes.filter((x) => x.id !== id)
+      })
+      toast('Nota excluída', () =>
+        commit((d) => {
+          if (!d.notes.some((x) => x.id === copy.id)) d.notes.push(copy)
         }),
       )
     },

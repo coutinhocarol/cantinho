@@ -3,7 +3,7 @@ import type { Actions } from '../lib/actions'
 import type { Store } from '../lib/store'
 import type { AppState, ListId } from '../lib/types'
 
-export type TabId = 'inicio' | 'quadro' | 'calendario' | 'listas' | 'areas'
+export type TabId = 'inicio' | 'quadro' | 'calendario' | 'listas' | 'notas' | 'areas'
 
 export interface UiState {
   tview: 'area' | 'matriz'
@@ -11,6 +11,7 @@ export interface UiState {
   calSel: string
   calMonth: { y: number; m: number }
   listTab: ListId
+  noteId?: string
   lastArea?: string
 }
 

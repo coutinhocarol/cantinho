@@ -547,3 +547,26 @@ textarea.field{min-height:72px;resize:vertical}
 .linked-title svg{display:inline-block;vertical-align:-.12em;margin-right:5px}
 .wk-link svg,.ev-body svg{width:1em;height:1em;flex:none;display:inline-block;vertical-align:-.12em;margin-right:4px}
 .alert-inline svg{display:inline-block;vertical-align:-.12em;margin:0 3px 0 6px}
+
+/* ---------- notas ---------- */
+.notes-wrap{display:grid;grid-template-columns:minmax(220px,300px) minmax(0,1fr);gap:24px;align-items:start}
+.notes-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.notes-list{display:flex;flex-direction:column;gap:6px}
+.note-item{display:flex;flex-direction:column;gap:2px;text-align:left;padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface);color:inherit;font:inherit;cursor:pointer;min-width:0}
+.note-item b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-item span{color:var(--muted);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note-item:hover{background:var(--soft)}
+.note-item.on{border-color:var(--rose);background:var(--rose-tint)}
+.notes-editor{display:flex;flex-direction:column;gap:12px;min-width:0}
+.notes-bar{display:flex;align-items:center;gap:10px}
+.notes-bar .spacer{flex:1}
+.notes-back{display:none}
+.notes-title{font-size:22px;font-weight:600}
+.notes-body{min-height:55vh;resize:vertical;line-height:1.55;font-family:inherit}
+.notes-hint{margin:8px 0}
+@media (max-width:759px){
+  .notes-wrap{grid-template-columns:minmax(0,1fr)}
+  .notes-wrap.has-sel .notes-side{display:none}
+  .notes-back{display:inline-flex}
+  .notes-hint{display:none}
+}

@@ -7,6 +7,7 @@ import { Areas } from '../views/Areas'
 import { Calendario } from '../views/Calendario'
 import { Inicio } from '../views/Inicio'
 import { Listas } from '../views/Listas'
+import { Notas } from '../views/Notas'
 import { Quadro } from '../views/Quadro'
 import { AppContext } from './context'
 import type { AppCtx, DialogState, TabId, UiState } from './context'
@@ -17,6 +18,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: 'quadro', label: 'Tarefas' },
   { id: 'calendario', label: 'Calendário' },
   { id: 'listas', label: 'Coisinhas' },
+  { id: 'notas', label: 'Notas' },
   { id: 'areas', label: 'Áreas' },
 ]
 
@@ -179,6 +181,7 @@ export default function App({
     quadro: <Quadro />,
     calendario: <Calendario />,
     listas: <Listas />,
+    notas: <Notas />,
     areas: <Areas />,
   }
 

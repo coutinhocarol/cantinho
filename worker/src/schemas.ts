@@ -69,6 +69,14 @@ const ListItem = z.object({
   note: opt(z.string()),
 })
 
+const Note = z.object({
+  id: z.string().min(1).max(64),
+  title: z.string().max(500),
+  body: z.string().max(200_000),
+  createdAt: opt(num),
+  updatedAt: opt(num),
+})
+
 const MissedEvent = z.object({
   id: z.string().min(1).max(64),
   eventId: z.string().min(1).max(64),
@@ -96,6 +104,7 @@ export const AppStateSchema = z.object({
       compras: list(ListItem),
     })
     .default({ indicacoes: [], hobbies: [], compras: [] }),
+  notes: z.array(Note).max(2_000).default([]),
   missed: list(MissedEvent),
   reprioDate: z.string().nullish(),
 })

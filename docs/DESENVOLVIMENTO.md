@@ -111,6 +111,7 @@ Tabelas relacionais no PostgreSQL:
 | `events`           | compromissos (data, horário, dia inteiro, repetição)                                                                                                 |
 | `event_done_dates` | dias concluídos de compromissos que se repetem (FK → `events`)                                                                                       |
 | `list_items`       | Indicações e Hobbies                                                                                                                                 |
+| `notes`            | páginas da aba Notas: título e texto                                                                                                                 |
 | `missed_events`    | compromissos (ou dias de um que se repete) que passaram sem ser marcados como feitos; ficam na Bora até a exclusão ser confirmada                   |
 | `user_state`       | dia da última repriorização das tarefas (uma linha por usuário)                                                                                      |
 
