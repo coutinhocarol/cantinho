@@ -308,28 +308,6 @@ export function Inicio() {
                 </div>
                 {evNode}
               </div>
-              {missed.length ? (
-                <div className="missed-sec">
-                  <div className="sec-head">
-                    <h2>Compromissos que ficaram pra trás</h2>
-                    <Count n={missed.length} />
-                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário (num compromisso que se repete, só aquele dia; a série continua). Confirme a exclusão de cada um depois de decidir o que fazer: se ainda vale, crie de novo no Calendário." />
-                  </div>
-                  <div className="missed-list">
-                    {missed.map((m) => (
-                      <MissedRow key={m.id} m={m} />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <div>
-                <div className="sec-head">
-                  <h2>Áreas a checar</h2>
-                  <Count n={due.length} />
-                  <InfoButton text="Mostra as rotinas das áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
-                </div>
-                {areasNode}
-              </div>
               <div className="home-stack">
                 <div>
                   <div className="sec-head">
@@ -377,22 +355,44 @@ export function Inicio() {
                   </div>
                   {tasksNode}
                 </div>
-                <div>
+              </div>
+              {missed.length ? (
+                <div className="missed-sec">
                   <div className="sec-head">
-                    <h2>Tarefas a organizar</h2>
-                    <Count n={org.length} />
-                    <InfoButton text="Mostra as tarefas sem classificação e as do quadrante Agendar que ainda não estão ligadas a um compromisso do calendário (as que já têm prazo próximo vão para Tarefas pendentes)." />
+                    <h2>Compromissos que ficaram pra trás</h2>
+                    <Count n={missed.length} />
+                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário (num compromisso que se repete, só aquele dia; a série continua). Confirme a exclusão de cada um depois de decidir o que fazer: se ainda vale, crie de novo no Calendário." />
                   </div>
-                  {org.length ? (
-                    <div>
-                      {orgList.map((t) => (
-                        <TaskRow key={t.id} t={t} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="sub">Nada para organizar.</p>
-                  )}
+                  <div className="missed-list">
+                    {missed.map((m) => (
+                      <MissedRow key={m.id} m={m} />
+                    ))}
+                  </div>
                 </div>
+              ) : null}
+              <div>
+                <div className="sec-head">
+                  <h2>Áreas a checar</h2>
+                  <Count n={due.length} />
+                  <InfoButton text="Mostra as rotinas das áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
+                </div>
+                {areasNode}
+              </div>
+              <div>
+                <div className="sec-head">
+                  <h2>Tarefas a organizar</h2>
+                  <Count n={org.length} />
+                  <InfoButton text="Mostra as tarefas sem classificação e as do quadrante Agendar que ainda não estão ligadas a um compromisso do calendário (as que já têm prazo próximo vão para Tarefas pendentes)." />
+                </div>
+                {org.length ? (
+                  <div>
+                    {orgList.map((t) => (
+                      <TaskRow key={t.id} t={t} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="sub">Nada para organizar.</p>
+                )}
               </div>
             </div>
           )}
