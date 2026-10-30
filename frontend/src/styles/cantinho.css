@@ -562,7 +562,7 @@ textarea.field{min-height:72px;resize:vertical}
 .notes-bar .spacer{flex:1}
 .notes-back{display:none}
 .notes-title{font-size:22px;font-weight:600}
-.notes-body{min-height:55vh;resize:vertical;line-height:1.55;font-family:inherit}
+textarea.notes-body{min-height:max(360px,calc(100vh - 330px));field-sizing:content;resize:none;padding:16px 18px;font-size:16px;line-height:1.6}
 .notes-hint{margin:8px 0}
 @media (max-width:759px){
   .notes-wrap{grid-template-columns:minmax(0,1fr)}
