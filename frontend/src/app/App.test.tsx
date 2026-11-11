@@ -679,6 +679,29 @@ describe('Coisinhas', () => {
     expect(screen.getByLabelText('Filme')).toHaveTextContent('🎬')
   })
 
+  it('colar várias células do Excel adiciona um item por célula, com desfazer', async () => {
+    const { user, store } = setup()
+    await goTo(user, 'Coisinhas')
+    const input = document.querySelector('.list-card.active input') as HTMLInputElement
+    input.focus()
+    await user.paste('Leite\r\n  Pão \r\n\r\nCafé\tAçúcar\r\n')
+    expect(store.getState().lists.indicacoes.map((i) => i.title)).toEqual(['Leite', 'Pão', 'Café', 'Açúcar'])
+    expect(input).toHaveValue('')
+    expect(screen.getByText('4 itens adicionados')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Desfazer' }))
+    expect(store.getState().lists.indicacoes).toEqual([])
+  })
+
+  it('colar um texto de uma linha só segue o fluxo normal', async () => {
+    const { user, store } = setup()
+    await goTo(user, 'Coisinhas')
+    const input = document.querySelector('.list-card.active input') as HTMLInputElement
+    input.focus()
+    await user.paste('Só um item')
+    expect(input).toHaveValue('Só um item')
+    expect(store.getState().lists.indicacoes).toEqual([])
+  })
+
   it('item vazio não é adicionado', async () => {
     const { user, store } = setup()
     await goTo(user, 'Coisinhas')

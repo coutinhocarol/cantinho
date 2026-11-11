@@ -44,3 +44,14 @@ export const KINDS: Record<KindId, { label: string; emoji: string }> = {
   livro: { label: 'Livro', emoji: '📖' },
   outro: { label: 'Outro', emoji: '✨' },
 }
+
+/**
+ * Itens de um texto colado (por exemplo, células copiadas do Excel: linhas separadas por quebra de
+ * linha, colunas por tabulação). Cada célula não vazia vira um item.
+ */
+export function itemsFromPaste(text: string): string[] {
+  return text
+    .split(/[\r\n\t]+/)
+    .map((c) => c.trim().replace(/^"(.*)"$/, '$1').trim())
+    .filter(Boolean)
+}

@@ -11,6 +11,7 @@ export interface Actions {
   completeEvent(id: string, key: string): void
   moveEvent(id: string, fromKey: string, toKey: string, onMoved?: (toKey: string) => void): void
   addListItem(list: ListId, title: string): void
+  addListItems(list: ListId, titles: string[], doneMsg: string): void
   doneListItem(list: ListId, itemId: string, msg: string): void
   confirmMissed(id: string): void
   doneReprio(): void
@@ -149,6 +150,19 @@ export function createActions(store: Store, toast: ToastFn): Actions {
     addListItem(list, title) {
       const item: ListItem = { id: uid(), title, createdAt: Date.now() }
       commit((d) => void d.lists[list].push(item))
+    },
+
+    addListItems(list, titles, msg) {
+      const now = Date.now()
+      const items: ListItem[] = titles.map((title, i) => ({ id: uid(), title, createdAt: now + i }))
+      if (!items.length) return
+      commit((d) => void d.lists[list].push(...items))
+      const ids = new Set(items.map((i) => i.id))
+      toast(msg, () =>
+        commit((d) => {
+          d.lists[list] = d.lists[list].filter((x) => !ids.has(x.id))
+        }),
+      )
     },
 
     doneListItem(list, itemId, msg) {

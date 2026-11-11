@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { useApp } from '../app/context'
 import { IconCheck, IconNote, IconPlus } from '../components/icons'
-import { LISTS, KINDS } from '../lib/lists'
+import { LISTS, KINDS, itemsFromPaste } from '../lib/lists'
 import type { ListId } from '../lib/types'
 
 type ListDef = (typeof LISTS)[number]
@@ -37,6 +37,14 @@ function ListCard({ L }: { L: ListDef }) {
           autoComplete="off"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={(e) => {
+            // várias células copiadas (Excel, Google Planilhas…): cada uma vira um item
+            const items = itemsFromPaste(e.clipboardData.getData('text'))
+            if (items.length < 2) return
+            e.preventDefault()
+            actions.addListItems(L.id, items, `${items.length} itens adicionados`)
+            setText('')
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') add()
           }}
