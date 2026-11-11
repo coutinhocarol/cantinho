@@ -158,13 +158,27 @@ describe('/api/state', () => {
   it('reordenar e editar áreas', async () => {
     await client.put('/api/state', sampleState())
     const s = sampleState()
-    s.areas.reverse()
-    s.areas[1].name = 'Quarto de hóspedes'
-    s.areas[1].routines[0].period = { type: 'interval', every: 3, unit: 'days' } as any
+    // como o app faz ao arrastar: só o campo `order` muda, a lista continua na mesma posição
+    s.areas[0].order = 1
+    s.areas[1].order = 0
+    s.areas[0].name = 'Quarto de hóspedes'
+    s.areas[0].routines[0].period = { type: 'interval', every: 3, unit: 'days' } as any
     await client.put('/api/state', s)
     const areas = (await client.get('/api/state')).body.areas
     expect(areas.map((a: any) => a.id)).toEqual(['a2', 'a1'])
     expect([areas[1].name, areas[1].routines[0].period.every]).toEqual(['Quarto de hóspedes', 3])
+  })
+
+  it('a ordem das áreas sobrevive a salvar e carregar de novo, mesmo com a lista fora de ordem', async () => {
+    const s = sampleState()
+    ;(s.areas as any[]).push({ ...s.areas[0], id: 'a3', name: 'Diversos', order: 2, routines: [{ ...s.areas[0].routines[1], id: 'r9' }] })
+    await client.put('/api/state', s)
+    // arrasta "Diversos" para o começo
+    const moved = (await client.get('/api/state')).body
+    moved.areas.find((a: any) => a.id === 'a3').order = 0
+    moved.areas.filter((a: any) => a.id !== 'a3').forEach((a: any, i: number) => (a.order = i + 1))
+    await client.put('/api/state', moved)
+    expect((await client.get('/api/state')).body.areas.map((a: any) => a.id)).toEqual(['a3', 'a1', 'a2'])
   })
 
   it('adicionar e remover rotinas de uma área', async () => {

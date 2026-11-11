@@ -93,8 +93,9 @@ export async function replaceState(tx: Sql, userId: string, st: AppStateInput): 
   )
   if (done.length) await tx`insert into event_done_dates ${tx(done)}`
 
-  // áreas
-  for (const [order, a] of st.areas.entries()) {
+  // áreas, na ordem escolhida pela pessoa (campo `order`; o app só muda esse campo ao reordenar)
+  const byOrder = [...st.areas].sort((x, y) => (x.order ?? 0) - (y.order ?? 0))
+  for (const [order, a] of byOrder.entries()) {
     await tx`insert into areas (user_id, id, name, emoji, accepts_tasks, sort_order, created_at)
       values (${userId}, ${a.id}, ${a.name}, ${a.emoji ?? ''},
         ${a.acceptsTasks !== false}, ${order}, ${ts(a.createdAt) ?? new Date()})
