@@ -85,6 +85,20 @@ describe('Início (Bora)', () => {
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
   })
 
+  it('tem o atalho "Nova tarefa", que abre o mesmo diálogo da aba Tarefas', async () => {
+    const { user, store } = setup((s) => void s.areas.push(area('a', 'Quarto')))
+    await user.click(screen.getByRole('button', { name: 'Nova tarefa' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByPlaceholderText('Ex.: Trocar a roupa de cama'), 'Regar as plantas')
+    await user.click(within(dialog).getByRole('button', { name: 'Adicionar' }))
+    expect(store.getState().tasks.map((x) => x.title)).toEqual(['Regar as plantas'])
+  })
+
+  it('sem áreas que aceitem tarefas, o atalho não aparece', () => {
+    setup()
+    expect(screen.queryByRole('button', { name: 'Nova tarefa' })).not.toBeInTheDocument()
+  })
+
   it('checar uma área pendente a tira da lista e permite desfazer', async () => {
     const { user, store } = setup((s) => void s.areas.push(area('a', 'Quarto', { lastDone: null })))
     expect(screen.getByText('Ainda não checada')).toBeInTheDocument()

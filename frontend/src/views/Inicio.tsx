@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { useApp } from '../app/context'
-import { Flower, IconCheck, IconNote } from '../components/icons'
+import { Flower, IconCheck, IconNote, IconPlus } from '../components/icons'
 import { LinkedTasks, TaskTags } from '../components/taskParts'
-import { acceptsTasks, areaById, routineLabel, routineStatus, sortedAreas } from '../lib/areas'
+import { acceptsTasks, areaById, routineLabel, routineStatus, sortedAreas, taskAreas } from '../lib/areas'
 import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
 import { organizeTasks, pendingTasks } from '../lib/tasks'
 import type { Area, AreaStatus, MissedEvent, Routine, Task } from '../lib/types'
@@ -289,6 +289,12 @@ export function Inicio() {
           <p className="sub tw:text-[15px] tw:normal-case">{capitalize(today)}</p>
           <h1>{hi}!</h1>
         </div>
+        {taskAreas(state).length ? (
+          <button className="btn primary" onClick={() => openDialog({ kind: 'task', id: null })}>
+            <IconPlus />
+            Nova tarefa
+          </button>
+        ) : null}
       </div>
       <div className="home-wrap">
         <div className="home-main">
