@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
-import { TAB_ICONS } from '../components/icons'
+import { IconPalette, TAB_ICONS } from '../components/icons'
 import { createActions } from '../lib/actions'
 import type { Store } from '../lib/store'
 import { ymd } from '../lib/time'
@@ -212,6 +212,15 @@ export default function App({
               </button>
             ))}
           </nav>
+          <button
+            type="button"
+            className="btn ghost icon-btn"
+            aria-label="Aparência"
+            title="Aparência"
+            onClick={() => openDialog({ kind: 'appearance' })}
+          >
+            <IconPalette />
+          </button>
           {onLogout ? (
             <button type="button" className="btn ghost" title={username} onClick={onLogout}>
               Sair

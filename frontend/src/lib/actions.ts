@@ -222,7 +222,7 @@ export function createActions(store: Store, toast: ToastFn): Actions {
         })
       commit((d) => each(d, (r) => void (r.forceDue = now)))
       toast(
-        `${refs.length} ${refs.length === 1 ? 'rotina foi' : 'rotinas foram'} pra A checar`,
+        `${refs.length} ${refs.length === 1 ? 'rotina foi' : 'rotinas foram'} pra lista Para olhar`,
         () => commit((d) => each(d, (r) => void delete r.forceDue)),
       )
     },
@@ -234,7 +234,7 @@ export function createActions(store: Store, toast: ToastFn): Actions {
       commit((d) => {
         routineById(areaById(d, areaId), routineId)!.forceDue = Date.now()
       })
-      toast(`${routineLabel(a, r)} voltou para A checar`, () => {
+      toast(`${routineLabel(a, r)} voltou para a lista Para olhar`, () => {
         const x = routineById(areaById(get(), areaId), routineId)
         if (!x) return
         commit((d) => {

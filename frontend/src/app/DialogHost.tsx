@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { AreaDialog } from '../dialogs/AreaDialog'
+import { AppearanceDialog } from '../dialogs/AppearanceDialog'
 import { EventDialog } from '../dialogs/EventDialog'
 import { ListItemDialog, MoveDialog, ScheduleDialog } from '../dialogs/SmallDialogs'
 import { TaskDialog } from '../dialogs/TaskDialog'
@@ -21,6 +22,8 @@ function Content() {
       return <ScheduleDialog taskId={dialog.taskId} />
     case 'move':
       return <MoveDialog taskId={dialog.taskId} />
+    case 'appearance':
+      return <AppearanceDialog />
   }
 }
 

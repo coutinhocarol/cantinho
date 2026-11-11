@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import Root from './app/Root'
 import { createHttpAuth } from './lib/auth'
 import './styles/index.css'
+import { applyAppearance } from './lib/appearance'
+
+applyAppearance()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

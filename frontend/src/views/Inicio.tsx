@@ -44,7 +44,7 @@ function StatusLine({ r, st }: { r: Routine; st: AreaStatus }) {
     const r = rel(st.since!)
     return (
       <span className="late">
-        Pendente {r.startsWith('há ') ? r : r === 'mês passado' ? 'desde o mês passado' : 'desde ' + r}
+        {r.startsWith('há ') ? `Faz ${r.slice(3)}` : r === 'mês passado' ? 'Desde o mês passado' : `Desde ${r}`}
       </span>
     )
   }
@@ -262,7 +262,7 @@ export function Inicio() {
                 {e.title}
               </button>
               <span className="task-tags">
-                {e.allDay ? null : <span className="chip rose">{evTimeText(e)}</span>}
+                {e.allDay ? null : <span className="chip accent">{evTimeText(e)}</span>}
                 {e.repeat && e.repeat !== 'none' ? (
                   <span className="chip">{REPEAT_LABEL[e.repeat]}</span>
                 ) : null}
@@ -296,7 +296,7 @@ export function Inicio() {
             <div className="empty all-ok">
               <Flower className="flower g" />
               <strong>Tudo certo por hoje</strong>
-              <p>Compromissos, tarefas e áreas estão em dia.</p>
+              <p>Pode descansar um pouco. Compromissos, tarefas e áreas estão em dia.</p>
             </div>
           ) : (
             <div className="home-grid">
@@ -321,7 +321,7 @@ export function Inicio() {
                     <div className="area-row due">
                       <div className="area-txt">
                         <b>Revisar a matriz de priorização</b>
-                        <span className="late">Pendente hoje</span>
+                        <span className="late">Para hoje</span>
                         <button
                           type="button"
                           className="nav-pill"
@@ -372,7 +372,7 @@ export function Inicio() {
               ) : null}
               <div>
                 <div className="sec-head">
-                  <h2>Áreas a checar</h2>
+                  <h2>Áreas para olhar</h2>
                   <Count n={due.length} />
                   <InfoButton text="Mostra as rotinas das áreas que já venceram: passaram os dias combinados desde a última checagem, ou chegou o dia e o horário da semana. A pendente há mais tempo vem primeiro. Checar recomeça a contagem." />
                 </div>

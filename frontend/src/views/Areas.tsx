@@ -257,7 +257,7 @@ export function Areas() {
                             <dt>Situação</dt>
                             <dd>
                               {st.due ? (
-                                <span className="chip rose">A checar</span>
+                                <span className="chip rose">Para olhar</span>
                               ) : (
                                 <span className="chip green">Em dia</span>
                               )}
@@ -268,14 +268,14 @@ export function Areas() {
                             </dd>
                             {st.due ? (
                               <>
-                                <dt>Pendente desde</dt>
+                                <dt>Esperando desde</dt>
                                 <dd title={st.since ? fmtWhen(st.since) : undefined}>
                                   {st.since ? rel(st.since) : 'o início'}
                                 </dd>
                               </>
                             ) : (
                               <>
-                                <dt>Fica pendente</dt>
+                                <dt>Volta a aparecer</dt>
                                 <dd title={st.nextAt ? fmtWhen(st.nextAt) : undefined}>
                                   {st.nextAt ? rel(st.nextAt) : '—'}
                                 </dd>

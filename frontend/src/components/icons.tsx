@@ -114,3 +114,12 @@ export const IconNote = () => (
     <path d="M6 3h8l5 5v13H6zM14 3v5h5M9 13h7M9 17h7" />
   </svg>
 )
+
+export const IconPalette = () => (
+  <svg {...base} strokeWidth="2" aria-hidden="true">
+    <path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 1.6-2.1-.4-1.1.2-2.2 1.4-2.2H17a4 4 0 0 0 4-4C21 6.9 17 3 12 3z" />
+    <circle cx="7.5" cy="11" r="1" />
+    <circle cx="10.5" cy="7.5" r="1" />
+    <circle cx="15" cy="8" r="1" />
+  </svg>
+)

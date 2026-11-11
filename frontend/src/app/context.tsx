@@ -27,6 +27,7 @@ export type DialogState =
   | { kind: 'listItem'; list: ListId; id: string }
   | { kind: 'schedule'; taskId: string }
   | { kind: 'move'; taskId: string }
+  | { kind: 'appearance' }
   | null
 
 export interface AppCtx {

@@ -40,7 +40,7 @@ function occurrences(p: Period, now: number): number[] {
   return out.sort((a, b) => a - b)
 }
 
-/** Situação de uma rotina: pendente ("A checar"), progresso 0..1 e próximos marcos. */
+/** Situação de uma rotina: pendente ("Para olhar"), progresso 0..1 e próximos marcos. */
 export function routineStatus(r: Routine, now = Date.now()): AreaStatus {
   const p = r.period
   if (r.forceDue) return { due: true, progress: 1, since: r.forceDue, forced: true }

@@ -297,7 +297,7 @@ export function AreaDialog({ id }: { id: string | null }) {
                     />
                   </div>
                   <p className="sub tw:mt-[8px] tw:text-[13px]">
-                    A rotina volta para A checar nesses dias, no horário escolhido. Uma checagem feita
+                    A rotina volta a aparecer para olhar nesses dias, no horário escolhido. Uma checagem feita
                     antes do horário não vale para aquele dia.
                   </p>
                 </>

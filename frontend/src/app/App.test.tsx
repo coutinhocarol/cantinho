@@ -81,7 +81,7 @@ describe('Início (Bora)', () => {
   it('mostra o cumprimento e as seções do dia', () => {
     setup((s) => void s.areas.push(area('a', 'Quarto', { lastDone: null })))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(/^(Bom dia|Boa tarde|Boa noite)!$/)
-    for (const h of ['Compromissos de hoje', 'Áreas a checar', 'Tarefas pendentes', 'Tarefas a organizar'])
+    for (const h of ['Compromissos de hoje', 'Áreas para olhar', 'Tarefas pendentes', 'Tarefas a organizar'])
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument()
   })
 
@@ -308,7 +308,7 @@ describe('Áreas', () => {
     await goTo(user, 'Áreas')
     await user.click(screen.getAllByRole('button', { name: 'Mandar pra checar' })[0])
     expect(store.getState().areas.find((a) => a.id === 'a')!.routines[0].forceDue).toBeTypeOf('number')
-    expect(screen.getByText('Quarto voltou para A checar')).toBeInTheDocument()
+    expect(screen.getByText('Quarto voltou para a lista Para olhar')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mandar todas pra checar' }))
     expect(store.getState().areas.every((a) => a.routines.every((r) => r.forceDue))).toBe(true)
     expect(screen.getByRole('button', { name: 'Mandar todas pra checar' })).toBeDisabled()
@@ -590,6 +590,27 @@ describe('Calendário', () => {
     await user.click(within(side).getByRole('button', { name: 'Concluir compromisso' }))
     expect(store.getState().events[0].doneDates).toEqual([tk])
     expect(screen.getByText('Compromisso concluído')).toBeInTheDocument()
+  })
+})
+
+describe('Aparência', () => {
+  it('o botão abre as preferências; escolher tema e contadores aplica na hora', async () => {
+    localStorage.removeItem('cantinho-theme')
+    localStorage.removeItem('cantinho-counts')
+    const { user } = setup()
+    await user.click(screen.getByRole('button', { name: 'Aparência' }))
+    const dialog = screen.getByRole('dialog')
+    expect(within(dialog).getByLabelText(/Automático/)).toBeChecked()
+    await user.click(within(dialog).getByLabelText(/Escuro/))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('escuro')
+    const counts = within(dialog).getByLabelText(/Mostrar o número de itens/)
+    expect(counts).not.toBeChecked()
+    await user.click(counts)
+    expect(document.body.classList.contains('hide-counts')).toBe(false)
+    await user.click(within(dialog).getByRole('button', { name: 'Pronto' }))
+    document.documentElement.removeAttribute('data-theme')
+    localStorage.removeItem('cantinho-theme')
+    localStorage.removeItem('cantinho-counts')
   })
 })
 

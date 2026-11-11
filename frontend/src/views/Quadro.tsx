@@ -231,7 +231,7 @@ function Board() {
               <b>{col.name}</b>
               {col.st ? (
                 col.st.due ? (
-                  <span className="chip rose">A checar</span>
+                  <span className="chip rose">Para olhar</span>
                 ) : (
                   <span className="chip green">Em dia</span>
                 )
