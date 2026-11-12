@@ -6,7 +6,7 @@ import { acceptsTasks, areaById, routineLabel, routineStatus, sortedAreas, taskA
 import { REPEAT_LABEL, evTimeText, eventsOn, isEvDone } from '../lib/events'
 import { organizeTasks, pendingTasks } from '../lib/tasks'
 import type { Area, AreaStatus, MissedEvent, Routine, Task } from '../lib/types'
-import { capitalize, fmtDayMonth, parseYmd, rel, ymd } from '../lib/time'
+import { fmtDayMonth, parseYmd, rel, ymd } from '../lib/time'
 
 function Ring({ a, st }: { a: Area; st: AreaStatus }) {
   const r = 21
@@ -182,11 +182,6 @@ export function Inicio() {
   const evPend = eventsOn(state, tk).filter((e) => !isEvDone(e, tk))
   const missed = [...state.missed].sort((x, y) => x.date.localeCompare(y.date))
   const reprioPending = openCount > 0 && state.reprioDate !== tk
-  const today = new Date().toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
   const hr = new Date().getHours()
   const hi = hr < 12 ? 'Bom dia' : hr < 18 ? 'Boa tarde' : 'Boa noite'
 
@@ -286,7 +281,6 @@ export function Inicio() {
     <>
       <div className="hello">
         <div>
-          <p className="sub tw:text-[15px] tw:normal-case">{capitalize(today)}</p>
           <h1>{hi}!</h1>
         </div>
         {taskAreas(state).length ? (
