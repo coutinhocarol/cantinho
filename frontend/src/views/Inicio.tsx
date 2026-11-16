@@ -355,20 +355,22 @@ export function Inicio() {
                   </div>
                   {tasksNode}
                 </div>
-                {missed.length ? (
-                  <div className="missed-sec">
-                    <div className="sec-head">
-                      <h2>Compromissos que ficaram pra trás</h2>
-                      <Count n={missed.length} />
-                      <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário (num compromisso que se repete, só aquele dia; a série continua). Confirme a exclusão de cada um depois de decidir o que fazer: se ainda vale, crie de novo no Calendário." />
-                    </div>
+                <div className="missed-sec">
+                  <div className="sec-head">
+                    <h2>Compromissos que ficaram pra trás</h2>
+                    <Count n={missed.length} />
+                    <InfoButton text="Compromissos cujo dia passou sem serem marcados como feitos. O sistema os tirou do calendário (num compromisso que se repete, só aquele dia; a série continua). Confirme a exclusão de cada um depois de decidir o que fazer: se ainda vale, crie de novo no Calendário." />
+                  </div>
+                  {missed.length ? (
                     <div className="missed-list">
                       {missed.map((m) => (
                         <MissedRow key={m.id} m={m} />
                       ))}
                     </div>
-                  </div>
-                ) : null}
+                  ) : (
+                    <p className="sub">Nenhum compromisso ficou pra trás.</p>
+                  )}
+                </div>
               </div>
               <div>
                 <div className="sec-head">
