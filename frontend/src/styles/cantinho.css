@@ -562,7 +562,13 @@ textarea.field{min-height:72px;resize:vertical}
 .missed-btn{flex:none}
 
 /* seção de compromissos perdidos: largura toda e em colunas quando há espaço */
-.home-stack .missed-sec{margin-top:0}
+.home-grid .missed-sec{margin-top:0}
+@media (min-width:900px){
+.hg-hoje{grid-column:1;grid-row:1}
+.hg-reprio{grid-column:2;grid-row:1}
+.hg-missed{grid-column:1;grid-row:2}
+.hg-pend{grid-column:2;grid-row:2}
+}
 .missed-list{display:grid;grid-template-columns:minmax(0,1fr)}
 
 /* ícones das etiquetas (no lugar de emojis) */

@@ -300,7 +300,7 @@ export function Inicio() {
             </div>
           ) : (
             <div className="home-grid">
-              <div>
+              <div className="hg-hoje">
                 <div className="sec-head">
                   <h2>Compromissos de hoje</h2>
                   <Count n={evPend.length} />
@@ -308,8 +308,8 @@ export function Inicio() {
                 </div>
                 {evNode}
               </div>
-              <div className="home-stack">
-                <div>
+              <>
+                <div className="hg-reprio">
                   <div className="sec-head">
                     <h2>Repriorizar tarefas</h2>
                     <Count n={reprioPending ? 1 : 0} />
@@ -347,7 +347,7 @@ export function Inicio() {
                     <p className="sub">Tarefas repriorizadas hoje.</p>
                   )}
                 </div>
-                <div>
+                <div className="hg-pend">
                   <div className="sec-head">
                     <h2>Tarefas pendentes</h2>
                     <Count n={pend.length} />
@@ -355,7 +355,7 @@ export function Inicio() {
                   </div>
                   {tasksNode}
                 </div>
-                <div className="missed-sec">
+                <div className="missed-sec hg-missed">
                   <div className="sec-head">
                     <h2>Compromissos que ficaram pra trás</h2>
                     <Count n={missed.length} />
@@ -371,7 +371,7 @@ export function Inicio() {
                     <p className="sub">Nenhum compromisso ficou pra trás.</p>
                   )}
                 </div>
-              </div>
+              </>
               <div>
                 <div className="sec-head">
                   <h2>Áreas para olhar</h2>
