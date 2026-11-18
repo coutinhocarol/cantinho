@@ -1,0 +1,2 @@
+DATABASE_URL=postgresql+psycopg://postgres.pwartcbjojgoyshafgfk:zNOpQBWJnCE27YNE@aws-1-sa-east-1.pooler.supabase.com:5432/postgres
+JWT_SECRET=bGi5Bgf7ARr0bBQsyGO6PM9twS2omQcgeH4YQ0Nwhspimy1IjU2AT5nE5h-wIYA0
