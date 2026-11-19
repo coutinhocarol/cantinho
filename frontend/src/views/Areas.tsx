@@ -215,6 +215,22 @@ export function Areas() {
               {areas.map((a) => {
                 const multi = a.routines.length > 1
                 const n = state.tasks.filter((t) => t.areaId === a.id).length
+                const checkAction = (r: (typeof a.routines)[number], st: ReturnType<typeof routineStatus>) =>
+                  st.due ? (
+                    <button
+                      className="check-btn wide"
+                      aria-label={`Checar ${routineLabel(a, r)}`}
+                      onClick={() => actions.markDone(a.id, r.id)}
+                    >
+                      <IconCheck />
+                      <span>Checar</span>
+                    </button>
+                  ) : (
+                    <button className="btn bora" onClick={() => actions.forceDue(a.id, r.id)}>
+                      <IconSend />
+                      Mandar pra checar
+                    </button>
+                  )
                 return (
                   <div
                     className={`area-card${dragId === a.id ? ' dragging' : ''}`}
@@ -282,23 +298,7 @@ export function Areas() {
                               </>
                             )}
                           </dl>
-                          <div className="acts">
-                            {st.due ? (
-                              <button
-                                className="check-btn wide"
-                                aria-label={`Checar ${routineLabel(a, r)}`}
-                                onClick={() => actions.markDone(a.id, r.id)}
-                              >
-                                <IconCheck />
-                                <span>Checar</span>
-                              </button>
-                            ) : (
-                              <button className="btn bora" onClick={() => actions.forceDue(a.id, r.id)}>
-                                <IconSend />
-                                Mandar pra checar
-                              </button>
-                            )}
-                          </div>
+                          {multi ? <div className="acts">{checkAction(r, st)}</div> : null}
                         </div>
                       )
                     })}
@@ -307,6 +307,7 @@ export function Areas() {
                       <dd>{acceptsTasks(a) ? `${n}` : 'Não aceita tarefas'}</dd>
                     </dl>
                     <div className="acts">
+                      {!multi && a.routines[0] ? checkAction(a.routines[0], routineStatus(a.routines[0], now)) : null}
                       <button className="btn" onClick={() => openDialog({ kind: 'area', id: a.id })}>
                         Editar
                       </button>
