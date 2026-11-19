@@ -233,7 +233,8 @@ body.hide-counts .count{display:none}
 .area-card dd{margin:0}
 .area-card .acts{display:flex;gap:6px;margin-top:auto}
 .area-card .routine{display:flex;flex-direction:column;gap:12px;padding-top:14px;border-top:1px solid var(--line)}
-.area-card .routine-head{display:flex;flex-direction:column}
+.area-card .routine-head{display:flex;flex-direction:row;justify-content:space-between;align-items:flex-start;gap:12px}
+.area-card .routine-head>.check-btn,.area-card .routine-head>.btn.bora{flex:none;margin-left:auto;min-height:40px;padding:8px 14px}
 .area-card .routine-head b{font-size:16px}
 .grip{border:0;background:transparent;color:var(--muted);width:36px;height:40px;border-radius:12px;display:grid;place-items:center;cursor:grab;touch-action:none;margin-left:auto;flex:none;-webkit-user-select:none;user-select:none}
 .grip:hover{background:var(--soft);color:var(--ink)}

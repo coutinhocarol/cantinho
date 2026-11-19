@@ -265,8 +265,11 @@ export function Areas() {
                         <div className="routine" key={r.id}>
                           {multi ? (
                             <div className="routine-head">
-                              <b>{r.name}</b>
-                              <span className="per">{periodText(r.period)}</span>
+                              <div className="tw:min-w-0">
+                                <b>{r.name}</b>
+                                <span className="per">{periodText(r.period)}</span>
+                              </div>
+                              {checkAction(r, st)}
                             </div>
                           ) : null}
                           <dl>
@@ -298,7 +301,6 @@ export function Areas() {
                               </>
                             )}
                           </dl>
-                          {multi ? <div className="acts">{checkAction(r, st)}</div> : null}
                         </div>
                       )
                     })}
